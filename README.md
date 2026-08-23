@@ -5,6 +5,9 @@ what changed on 2026-08-23.
 
 - **Shell config** — `~/.dotfiles/bash/.bashrc` (this repo). `~/.bashrc` is a
   symlink to it.
+- **Line editor config** — `~/.dotfiles/bash/.blerc` (this repo). `~/.blerc` is a
+  symlink to it, same scheme as `.bashrc`. Read by ble.sh when `.bashrc` sources
+  it; owns the fzf and zoxide integrations, so the two files must stay in step.
 - **Secrets** — `~/.config/shell/secrets.env`, mode `600`, **outside this repo**
   and gitignored. Sourced by `.bashrc`.
 - **Emacs config** — `~/.emacs.d/config.org` (separate repo). `config.el` is
@@ -21,6 +24,10 @@ Reload after editing: `r`
 `gs`, `gp` and `ya` are **not** used as aliases — they are real binaries on this
 system (ghostscript, PARI/GP, and yazi's own package manager). Hence `gst`,
 `gps`, and `y`.
+
+> This rule has been broken once already: the 2026-08-23 alias recovery added
+> `gs` and `gp` from an old fragment, shadowing both binaries until it was
+> caught. Check `command -v` before adding any two-letter alias.
 
 | Alias | Runs | Notes |
 |---|---|---|
@@ -47,6 +54,10 @@ system (ghostscript, PARI/GP, and yazi's own package manager). Hence `gst`,
 | `gwip` | `git add -A && git commit -m wip` | scratch checkpoint |
 | `gc` | `git clone` | pre-existing |
 | `lg` | `lazygit` | full TUI |
+| `gfo` | `git fetch origin` | narrower than `gf` |
+| `gcheck` | `git checkout` | same as `gco` |
+| `gsp` | `git stash; git pull` | |
+| `gcredential` | `git config credential.helper store` | ⚠ plaintext `~/.git-credentials` |
 
 ### Directory navigation
 
@@ -102,7 +113,7 @@ reports the version and init time.
 
 | Group | Aliases |
 |---|---|
-| listing | `ls` `ll` `e` `et` `el` `lst` `lstf` (exa when installed) |
+| listing | `ls` `ll` `e` `et` `el` `lst` `lstf` (eza when installed) |
 | config | `b` `lsw` (`~/.stumpwmrc`) `lnv` `lresolv` |
 | files | `chx` `cpr` `xo` `pdf` |
 | system | `psg` `kk` `hg` `nmtui` `swapcaps` |
@@ -111,11 +122,49 @@ reports the version and init time.
 | languages | `activate` `sb` `lisp` `cuis` |
 | flask app | `start-app` `status-app` `check-app` `db-edit` |
 
+### Line editor (ble.sh) and its keybindings
+
+ble.sh replaces bash's readline entirely: syntax highlighting, an inline
+autosuggestion, and a completion menu. It is installed at
+`~/.local/share/blesh` (**not** in this repo — update it with `ble-update`) and
+configured by `~/.blerc`, which **is** in this repo.
+
+fzf and zoxide are driven *through* ble.sh rather than by their own shell init.
+The stock inits bind keys with readline's `bind -x`, which ble.sh does not
+honour; ble.sh's own `integration/` modules bind via `ble-bind`, which it does.
+
+| Key | Does |
+|---|---|
+| `M-t` | fzf file picker — inserts the path at the cursor |
+| `M-c` | fzf directory picker — `cd`s into the choice |
+| `C-r` | history search |
+| `**`+`TAB` | fzf completion trigger, e.g. `vim **<TAB>` |
+| `TAB` | ble.sh's own completion menu |
+
+**`M-t`, not `C-t`.** StumpWM holds `C-t` as its prefix key (it is on the
+default; there is no `set-prefix-key` in `~/.stumpwmrc`), so `C-t` is grabbed by
+the WM and never reaches the terminal. `.blerc` rebinds the file picker to `M-t`
+via `ble/util/import/eval-after-load`, which is required because the module
+import is deferred to `ble-attach` and would otherwise overwrite a plain
+`ble-bind`. The module's original `C-t` bindings are left in place — harmless
+while the WM holds the key, and live again if the prefix ever moves.
+
+`C-r` is bound by **both** atuin and fzf in the emacs keymap. If it ever opens a
+plain fzf list rather than atuin's full-screen UI, append to `~/.blerc`:
+
+```bash
+ble-bind -m emacs -x C-r atuin-search-emacs
+```
+
+Troubleshooting dials live in `~/.blerc`, ordered by likelihood: auto-complete
+delay first, then syntax highlighting (`highlight_filename` is the one that
+stalls on Dropbox/Tresorit trees), then terminal redraw.
+
 ---
 
 ## Part 2 — What changed
 
-### Shell (`~/.dotfiles`, 3 commits)
+### Shell (`~/.dotfiles`)
 
 The repo itself is new — `~/.dotfiles` was previously untracked.
 
@@ -161,6 +210,11 @@ Only the top two were deferred. The rest are ≤8 ms and their hooks or
 keybindings must exist from the first prompt, so lazy-loading them would break
 Ctrl-R, fzf bindings, or zoxide's directory tracking to save a few milliseconds.
 
+> Superseded in part by `a9193fd`: the fzf and zoxide rows no longer describe
+> `.bashrc` at all. Both now load as ble.sh modules from `~/.blerc`, and fzf's
+> is deferred to `ble-attach` by `ble-import -d`. The timings above were
+> measured before that move and have not been re-taken.
+
 - **rbenv** — the shims directory and `RBENV_SHELL` are all `ruby`/`gem`/`bundle`
   need, and both are free to set, so they are set directly and `rbenv init` is
   deferred behind a stub function.
@@ -191,6 +245,37 @@ completion source line. Added `lsw` for `~/.stumpwmrc`. 79 → 76 aliases.
 
 Both WMs and their config files are still installed and untouched — only the
 shell aliases went. Re-add them if you switch back.
+
+**`a9193fd` — hand fzf and zoxide to ble.sh; eza aliases.** Three things:
+
+- The listing aliases called `exa`, which on this system is only a compat
+  symlink to `eza`, and passed a bare `--icons`. Modern eza takes an *optional*
+  `WHEN` value there, so `ls Documents/` was parsed as `--icons=Documents/` and
+  errored out. Now `eza … --icons=auto` (auto so icons drop when piped).
+- fzf and zoxide integration moved to `~/.blerc`. fzf was also being initialised
+  **twice** — `~/.fzf.bash` ends in the same `eval "$(fzf --bash)"` that the
+  line above it had just run, double-registering its readline bindings.
+  `~/.fzf/bin` is still put on PATH for `fzf-tmux` and `fzf-preview.sh`.
+- Four git aliases recovered from the old ml4w `~/dotfiles/10-aliases` fragment
+  before deleting it: `gfo`, `gcheck`, `gsp`, `gcredential`.
+
+**`8c68f01` — npm-global PATH entry into `add_path`.** It had been appended raw
+at the end of the file as `export PATH=~/.npm-global/bin:$PATH` — unquoted tilde
+(the same trap already flagged against `odin-bin`), and no dedupe, so
+re-sourcing stacked another copy on each time. `add_path` handles both. Kept
+last among the prepends so npm globals still win.
+
+**`ba22619` — track `.blerc`.** `.bashrc` now depends on it, so versioning only
+one would let them drift. Symlinked from `$HOME` like `.bashrc`.
+
+**alias regression fix.** `a9193fd` also added `gs` and `gp` from that same
+fragment, shadowing `/usr/bin/gs` (ghostscript) and `/usr/bin/gp` (PARI/GP) —
+exactly what the note at the top of the Git section exists to prevent. Both
+removed; `gst` and `gps` remain the intended spellings.
+
+**ble.sh updated** from `0.4.0-devel4+2f564e6` (2025-11-26) to `+63c23e9`, nine
+months of fixes on a bash 5.3 system. Not in this repo — `~/.local/share/blesh`,
+updated with `ble-update`.
 
 ### Emacs (`~/.emacs.d`, 5 commits)
 
@@ -263,9 +348,22 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
 - `~/.emacs.d/config.el` is tracked *and* gitignored, so it keeps reappearing as
   modified and needs `git add -f`. `git rm --cached config.el` would end this —
   `init.el` regenerates it at startup.
-- The `emacs-daemon` runit service is `sv down` and points at `/usr/bin/emacs`
-  (30.2) while the daemon in use is 31.0.50. Editing the one line in
-  `/run/runit/runsvdir/current/emacs-daemon/run` would make that permanent.
+- ~~The `emacs-daemon` runit service is `sv down` and points at
+  `/usr/bin/emacs` (30.2).~~ **Resolved 2026-08-23 — this was a misreading.**
+  Two service directories existed: a stale `~/emacs-daemon` (last touched
+  2025-11-19, recorded pid dead, `run` calling `/usr/bin/emacs`) and the live
+  `~/service/emacs-daemon`. Only the latter is what
+  `/run/runit/runsvdir/current/emacs-daemon` symlinks to, and it already calls
+  `/usr/local/bin/emacs` and is up. The stale copy was moved to
+  `~/archive/emacs-daemon-old/`.
 - `~/.xinitrc` is not tracked in this repo; it now contains the `cd "$HOME"` that
   stops terminals inheriting whatever directory `startx` was run from.
-- `~/.dotfiles` has no remote.
+- ~~`~/.dotfiles` has no remote.~~ Resolved — `origin` is
+  `git@github.com:vukini/dotfiles.git`.
+- **ble.sh is not tracked anywhere.** `~/.blerc` is in this repo but the editor
+  itself lives in `~/.local/share/blesh` and is updated out-of-band with
+  `ble-update`. A version bump can change binding behaviour under `.blerc`
+  without any commit here; the version in use is recorded in Part 2.
+- **`C-r` is claimed by both atuin and fzf** in ble.sh's emacs keymap, and which
+  one wins depends on load order at `ble-attach`. See the line-editor section
+  for the one-line override.

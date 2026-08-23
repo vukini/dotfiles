@@ -140,8 +140,11 @@ alias gwip='git add -A && git commit -m wip'
 alias lg='lazygit'
 
 # recovered from the old ml4w ~/dotfiles/10-aliases fragment (deleted 2026-08-23)
-alias gs='git status'                  # full output; gst is the -sb short form
-alias gp='git push'                    # duplicate of gps
+#
+# NOT recovered: `gs` and `gp`. The fragment defined both, but they are real
+# binaries here -- gs is ghostscript, gp is PARI/GP -- and aliasing them would
+# shadow the commands. `gst` and `gps` exist precisely to avoid that; see the
+# note at the top of the Git section in README.md.
 alias gfo='git fetch origin'           # narrower than gf
 alias gcheck='git checkout'            # duplicate of gco
 alias gsp='git stash; git pull'
