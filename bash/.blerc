@@ -1,0 +1,132 @@
+# ~/.blerc -- ble.sh configuration
+#
+# Loaded automatically by ble.sh (sourced from ~/.dotfiles/bash/.bashrc:18).
+# Created 2026-08-23. Every option here was verified to exist in the installed
+# build (0.4.0-devel4+63c23e9); `bleopt` with no args lists all 131 of them.
+#
+# TROUBLESHOOTING: the sections are ordered by how likely they are to be the
+# cause of flaky behaviour. If something misbehaves, start at section 1 and
+# work down, uncommenting one line at a time.
+
+# ---------------------------------------------------------------------------
+# 1. AUTO-COMPLETE  --  the usual suspect
+# ---------------------------------------------------------------------------
+# The greyed-out inline suggestion that appears ahead of the cursor. It is the
+# single most common source of "ble.sh feels buggy": it fires on a timer, so it
+# races with pasting, with fast typing, and with anything else that redraws the
+# line (atuin, zoxide, a slow prompt).
+#
+# Try the delay bump first. If it is still flaky, uncomment the disable line --
+# TAB completion keeps working either way, you only lose the inline preview.
+
+bleopt complete_auto_delay=300          # default 1; ms of idle before suggesting
+
+#bleopt complete_auto_complete=         # empty = turn the inline preview OFF
+
+# Menu style for TAB. 'align-nowrap' is the most predictable in a narrow window;
+# 'desc' shows descriptions but needs the width.
+bleopt complete_menu_style=align-nowrap
+
+# Ambiguous completion: 'a/b/c' can expand from 'a/b/c' prefixes. Handy, but it
+# is also where surprising completions come from. Uncomment to disable.
+#bleopt complete_ambiguous=
+
+# ---------------------------------------------------------------------------
+# 2. SYNTAX HIGHLIGHTING
+# ---------------------------------------------------------------------------
+# Second most common culprit, mostly on very long or heavily-quoted lines where
+# the parser has to re-scan. Disabling costs you colour, nothing functional.
+
+#bleopt highlight_syntax=               # empty = no syntax colouring
+#bleopt highlight_filename=             # empty = stop stat()ing words as paths
+#bleopt highlight_variable=             # empty = no variable colouring
+
+# highlight_filename is worth disabling on its own if you work over sshfs, NFS,
+# or your Dropbox/Tresorit trees -- it stat()s each word and stalls on slow FS.
+
+# ---------------------------------------------------------------------------
+# 3. TERMINAL / REDRAW
+# ---------------------------------------------------------------------------
+# If the prompt garbles after a window resize, or a stray '[?2004' or similar
+# appears, these are the knobs.
+
+bleopt canvas_winch_action=redraw-here  # redraw cleanly on SIGWINCH
+
+# Marker printed when a command's output has no trailing newline. Set empty if
+# you find it noisy.
+bleopt prompt_eol_mark=$'\e[91m<eol>\e[m'
+
+# Isolated ESC handling. If ESC sometimes needs a double-press in vim mode, or
+# an escape sequence leaks as literal text, try flipping this.
+#bleopt decode_isolated_esc=meta
+
+# ---------------------------------------------------------------------------
+# 4. BELLS
+# ---------------------------------------------------------------------------
+# NOTE: edit_abell / edit_vbell are obsolete in this build -- ble.sh reports
+# "[obsolute: use edit_bell=...]" if you set them. One option now, values are
+# 'abell' (audible), 'vbell' (visible flash), 'abell:vbell' (both), or empty.
+bleopt edit_bell=vbell                  # visible flash, no audible beep
+
+# ---------------------------------------------------------------------------
+# 5. HISTORY
+# ---------------------------------------------------------------------------
+# NOTE: atuin already owns cross-shell history (see .bashrc:57 and :329), so
+# ble.sh's own sharing is deliberately left OFF. Turning it on means two systems
+# writing history concurrently -- do not enable this while atuin is active.
+bleopt history_share=
+
+# ---------------------------------------------------------------------------
+# 6. INTEGRATIONS -- read before enabling
+# ---------------------------------------------------------------------------
+# ENABLED 2026-08-23. These REPLACE the stock init lines, which are now
+# commented out in ~/.dotfiles/bash/.bashrc (zoxide ~:257, fzf ~:331). Running
+# both double-binds C-t/C-r: stock fzf uses readline `bind -x`, which ble.sh
+# does not honour, while these modules bind through `ble-bind`, which it does.
+#
+# Order matters: .blerc is read when ble.sh is sourced at .bashrc:18, well
+# before those old lines -- so the modules initialise first and anything later
+# would clobber their wrappers.
+
+# fzf lives at /usr/bin/fzf (0.74.3) but its shell scripts are in the ~/.fzf
+# checkout, which the auto-detection does not find on its own. Point at it
+# explicitly; the module looks for $base/shell/{completion,key-bindings}.bash.
+_ble_contrib_fzf_base=$HOME/.fzf
+
+ble-import -d integration/fzf-completion
+ble-import -d integration/fzf-key-bindings
+
+# StumpWM owns C-t as its prefix key -- there is no set-prefix-key in
+# ~/.stumpwmrc, so it is on the default, and C-t is grabbed by the WM before it
+# ever reaches the terminal. fzf's file picker is therefore moved to M-t.
+#
+# This has to run AFTER the module above, which binds C-t itself. The import is
+# deferred (-d) until ble-attach, so a bare ble-bind here would be overwritten;
+# eval-after-load takes the same identifier as ble-import and fires once that
+# module has actually loaded.
+#
+# The module's original C-t bindings are deliberately left in place: they are
+# dead while StumpWM holds the key, and cost nothing. If you ever move the WM
+# prefix, C-t starts working as a second binding for free.
+ble/util/import/eval-after-load integration/fzf-key-bindings '
+  ble-bind -m emacs   -x M-t fzf-file-widget
+  ble-bind -m vi_imap -x M-t fzf-file-widget
+  ble-bind -m vi_nmap -s M-t "i\\M-t"'
+
+# Wraps __zoxide_z/__zoxide_zi so the terminal is handed over correctly during
+# the interactive `zi` picker. Self-initialises: it runs `zoxide init bash`
+# when it finds zoxide uninitialised, which is now the case.
+ble-import -d integration/zoxide
+
+# atuin has NO ble.sh contrib module -- it integrates through bash-preexec, and
+# ble.sh ships a compatible shim. Enable only if atuin's hooks misfire under
+# ble.sh (symptom: C-r opens plain readline search instead of atuin).
+#ble-import -d integration/bash-preexec
+
+# ---------------------------------------------------------------------------
+# 7. KEYBINDINGS
+# ---------------------------------------------------------------------------
+# Accept the inline suggestion with a right-arrow / C-f style motion.
+# ble-bind -f 'C-f' 'auto_complete/insert'
+
+# ble-bind -f 'C-x C-e' 'edit-and-execute-command'
