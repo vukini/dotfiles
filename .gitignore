@@ -1,0 +1,11 @@
+# Secrets -- never commit
+secrets.env
+*.env
+*.key
+*.pem
+.netrc
+
+# Editor / OS noise
+*~
+*.swp
+.DS_Store
