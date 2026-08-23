@@ -82,14 +82,14 @@ alias cd-='cd -'           # previous directory
 alias mkd='mkdir -p'
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'
-if command -v exa >/dev/null 2>&1; then
-    alias ls='exa --group-directories-first --icons'
-    alias ll='exa -lha --group-directories-first --icons'
-    alias e='exa'
-    alias et='exa'
-    alias el='exa -l'
-    alias lst='exa -l --tree --level=2'
-    alias lstf='exa -l --tree'
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza --group-directories-first --icons=auto'
+    alias ll='eza -lha --group-directories-first --icons=auto'
+    alias e='eza'
+    alias et='eza'
+    alias el='eza -l'
+    alias lst='eza -l --tree --level=2'
+    alias lstf='eza -l --tree'
 fi
 
 # editors and this file
@@ -137,6 +137,14 @@ alias gshp='git stash pop'
 alias gundo='git reset --soft HEAD~1'   # undo last commit, keep changes staged
 alias gwip='git add -A && git commit -m wip'
 alias lg='lazygit'
+
+# recovered from the old ml4w ~/dotfiles/10-aliases fragment (deleted 2026-08-23)
+alias gs='git status'                  # full output; gst is the -sb short form
+alias gp='git push'                    # duplicate of gps
+alias gfo='git fetch origin'           # narrower than gf
+alias gcheck='git checkout'            # duplicate of gco
+alias gsp='git stash; git pull'
+alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
 # config files
 # The WM is StumpWM (see ~/.xinitrc). qtile and herbstluftwm are still
@@ -246,7 +254,13 @@ emacs-restart() {
 
 # zoxide costs ~3 ms and its PROMPT_COMMAND hook must run from the first
 # prompt to record directory visits, so it stays eager.
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
+#
+# 2026-08-23: moved into ble.sh. ~/.blerc imports integration/zoxide, which runs
+# `zoxide init bash` itself and then wraps __zoxide_z/__zoxide_zi with ble.sh-
+# aware advice. .blerc is read at ble.sh source time (line 18), i.e. BEFORE this
+# point -- so re-running init here would redefine those functions and silently
+# discard the wrappers. Re-enable this line only if you drop the .blerc import.
+#command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 
 # rbenv -- lazy.
 # `eval "$(rbenv init - bash)"` costs ~50 ms, and ~28 ms of that is a startup
@@ -314,8 +328,21 @@ if _is_rich_term; then
     [ -r /usr/share/wikiman/widgets/widget.bash ] && \
         . /usr/share/wikiman/widgets/widget.bash
 
-    command -v fzf >/dev/null 2>&1 && eval "$(fzf --bash)"
-    [ -r "$HOME/.fzf.bash" ] && . "$HOME/.fzf.bash"
+    # 2026-08-23: fzf shell integration moved into ble.sh (~/.blerc imports
+    # integration/fzf-completion and fzf-key-bindings). Those bind C-t/C-r via
+    # `ble-bind`, which ble.sh honours; the stock `fzf --bash` uses readline
+    # `bind -x`, which ble.sh does not -- running both double-binds the keys.
+    #
+    # These two lines were ALSO initialising fzf twice: ~/.fzf.bash itself ends
+    # in `eval "$(fzf --bash)"`, so the eval below ran, then ran again on the
+    # next line. Both are now off; .blerc owns fzf.
+    #command -v fzf >/dev/null 2>&1 && eval "$(fzf --bash)"
+    #[ -r "$HOME/.fzf.bash" ] && . "$HOME/.fzf.bash"
+
+    # ...but keep what .fzf.bash did besides the eval: put ~/.fzf/bin on PATH
+    # for fzf-tmux and fzf-preview.sh. (The fzf binary itself comes from
+    # /usr/bin/fzf 0.74.3 -- this appends, so the system one still wins.)
+    [[ ":$PATH:" == *":$HOME/.fzf/bin:"* ]] || PATH="${PATH:+$PATH:}$HOME/.fzf/bin"
 
     [ -r "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
     command -v atuin >/dev/null 2>&1 && eval "$(atuin init bash)"
