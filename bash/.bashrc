@@ -166,7 +166,8 @@ alias piu='sudo xbps-install -Syu'
 
 # network
 alias pv='ping voidlinux.org'   # was defined twice; the `-c 5` variant was shadowed
-alias didi='ssh REDACTED-HOST'
+# Host-specific aliases (ssh targets etc.) live in ~/.config/shell/secrets.env,
+# which is mode 600 and gitignored, so no hostnames land in this repo.
 
 # languages and tools
 alias activate='. .venv/bin/activate'
