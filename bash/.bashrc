@@ -46,6 +46,7 @@ add_path "$HOME/bin/odin-bin"    # was "~/bin/odin-bin/": tilde never expands in
 add_path /usr/local/lib64/LispWorksPersonal
 add_path "$HOME/.pixi/bin"
 add_path "$HOME/.rbenv/bin"
+add_path "$HOME/.npm-global/bin"   # npm global prefix; provides `claude`
 export PATH
 
 # ------------------------------------------------------------------- history
