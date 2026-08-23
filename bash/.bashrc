@@ -76,6 +76,11 @@ fi
 
 # navigation and listing
 alias ..='z ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias d='dirs -v'          # numbered directory stack; use with pushd/popd
+alias cd-='cd -'           # previous directory
 alias mkd='mkdir -p'
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'
@@ -96,6 +101,44 @@ alias ec='emacsclient -nw'
 alias b='nvim ~/.bashrc'
 alias eb='emacsclient -nw ~/.bashrc'
 alias r='source ~/.bashrc'
+
+# nvim
+alias nv='nvim'
+alias nvd='nvim -d'                     # diff two files
+alias nvc='nvim ~/.config/nvim/init.lua'
+
+# emacs  (ec = emacsclient -nw, eb = edit this file, both above)
+alias eg='emacsclient -c -n -a ""'      # new GUI frame, returns immediately
+alias eq='emacs -Q -nw'                 # vanilla emacs, no config -- for debugging
+alias ekill="emacsclient -e '(kill-emacs)'"
+# see also the emacs-restart function below
+
+# git
+# `gs`, `gp` and `ya` are deliberately NOT used: they are taken by
+# ghostscript, PARI/GP, and yazi's own package manager respectively.
+alias g='git'
+alias gst='git status -sb'
+alias ga='git add'
+alias gaa='git add -A'
+alias gcm='git commit -m'
+alias gca='git commit -a -m'
+alias gamend='git commit --amend --no-edit'
+alias gco='git checkout'
+alias gsw='git switch'
+alias gb='git branch -vv'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gl='git log --oneline --graph --decorate -20'
+alias gla='git log --oneline --graph --decorate --all -30'
+alias gps='git push'
+alias gpl='git pull --ff-only'
+alias gf='git fetch --all --prune'
+alias gr='git remote -v'
+alias gsh='git stash'
+alias gshp='git stash pop'
+alias gundo='git reset --soft HEAD~1'   # undo last commit, keep changes staged
+alias gwip='git add -A && git commit -m wip'
+alias lg='lazygit'
 
 # config files
 alias lh='nvim ~/.config/herbstluftwm/autostart'
@@ -145,6 +188,20 @@ alias db-edit='sudo -u postgres psql'
 nn() {
     cd "$HOME/.config/nvim" || return
     nvim "$HOME/.config/nvim/init.lua"
+}
+
+# yazi, leaving the shell in whatever directory you quit from.
+# Must be a function, not an alias: a child process cannot change our cwd.
+# Quit with `q` to cd there; `Q` quits without changing directory.
+y() {
+    local tmp cwd
+    tmp="$(mktemp -t yazi-cwd.XXXXXX)" || return
+    yazi "$@" --cwd-file="$tmp"
+    cwd="$(command cat -- "$tmp" 2>/dev/null)"
+    rm -f -- "$tmp"          # removed before any early exit, so it never leaks
+    if [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        builtin cd -- "$cwd"
+    fi
 }
 
 hc() {
