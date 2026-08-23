@@ -132,11 +132,16 @@ tool init → interactive extras) and fixed five bugs:
 | PATH grew on every re-source — 31 → 39 entries after two | idempotent `add_path` + a final `_dedupe_path` |
 | duplicate `alias pv` | kept the surviving definition |
 
-Also: `setxkbmap` is now guarded by `$DISPLAY` (it used to run in every TTY and
-ssh session), all `source` lines are existence-guarded, and the
+Also: all `source` lines are existence-guarded, and the
 `history -a; history -c; history -r` in `PROMPT_COMMAND` was dropped — atuin
 already provides cross-shell history, and that reloaded a 20 000-line file at
 every prompt.
+
+`setxkbmap` was removed from `.bashrc` entirely (first guarded by `$DISPLAY`,
+then dropped): `~/.xinitrc` already applies `ctrl:swapcaps` once per X session,
+so running it again in every interactive shell was redundant. The `swapcaps`
+alias remains for re-applying it by hand after a keyboard hotplug, which resets
+xkb options.
 
 **`11aedc0` — lazy-load rbenv and mise.** Startup **~165 ms → ~88 ms**.
 
@@ -249,4 +254,10 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
 - The `emacs-daemon` runit service is `sv down` and points at `/usr/bin/emacs`
   (30.2) while the daemon in use is 31.0.50. Editing the one line in
   `/run/runit/runsvdir/current/emacs-daemon/run` would make that permanent.
+- The window manager is **StumpWM** (`~/.xinitrc`), not qtile or herbstluftwm —
+  both are commented out there. The `rq`, `fq`, `lq` and `lh` aliases, the `hc`
+  function, and the herbstclient completion in `.bashrc` are all leftovers from
+  those and do nothing useful in a StumpWM session.
+- `~/.xinitrc` is not tracked in this repo; it now contains the `cd "$HOME"` that
+  stops terminals inheriting whatever directory `startx` was run from.
 - `~/.dotfiles` has no remote.

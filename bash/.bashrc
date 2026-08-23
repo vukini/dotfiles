@@ -61,11 +61,9 @@ shopt -s histappend
 shopt -s checkwinsize
 export TERMINAL='kitty'
 
-# Caps -> Ctrl. Only meaningful under X; guarded so TTY and ssh sessions
-# do not spawn a doomed setxkbmap on every shell.
-if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
-    setxkbmap -option ctrl:swapcaps
-fi
+# Caps -> Ctrl is applied once per X session by ~/.xinitrc, so it is
+# deliberately NOT run here. Use the `swapcaps` alias to re-apply it by hand
+# (e.g. after hotplugging a keyboard, which resets xkb options).
 
 # -------------------------------------------------------------------- prompt
 # Sets PROMPT_COMMAND=command_prompt, which rebuilds PS1 each prompt.
@@ -158,7 +156,7 @@ alias fq='ps aux | grep qtile'
 alias kk='sudo kill -9'
 alias hg='history | grep'
 alias nmtui='sudo nmtui'
-alias swapcaps='setxkbmap -option ctrl:swapcaps'
+alias swapcaps='setxkbmap -option ctrl:swapcaps'   # re-apply after keyboard hotplug
 alias rq='qtile cmd-obj -o cmd -f restart'
 
 # packages (xbps)
