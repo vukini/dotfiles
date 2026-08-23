@@ -137,7 +137,8 @@ honour; ble.sh's own `integration/` modules bind via `ble-bind`, which it does.
 |---|---|
 | `M-t` | fzf file picker — inserts the path at the cursor |
 | `M-c` | fzf directory picker — `cd`s into the choice |
-| `C-r` | history search |
+| `C-r` | atuin history search (full-screen) |
+| `M-r` | fzf history search — the same widget `C-r` would otherwise give |
 | `**`+`TAB` | fzf completion trigger, e.g. `vim **<TAB>` |
 | `TAB` | ble.sh's own completion menu |
 
@@ -149,12 +150,17 @@ import is deferred to `ble-attach` and would otherwise overwrite a plain
 `ble-bind`. The module's original `C-t` bindings are left in place — harmless
 while the WM holds the key, and live again if the prefix ever moves.
 
-`C-r` is bound by **both** atuin and fzf in the emacs keymap. If it ever opens a
-plain fzf list rather than atuin's full-screen UI, append to `~/.blerc`:
+**`C-r` was contested.** Both atuin and fzf bind it in the emacs keymap, and fzf
+was winning: atuin binds during `atuin init bash` in `.bashrc`, but fzf's module
+is deferred to `ble-attach`, which runs later and overwrote it. `.blerc` now
+re-asserts atuin's binding in the same after-load hook, and parks fzf's history
+widget on `M-r` so both remain reachable.
 
-```bash
-ble-bind -m emacs -x C-r atuin-search-emacs
-```
+The re-assert calls `atuin-bind`, not a hand-written `ble-bind`.
+`atuin-search-emacs` is not a real widget — it is a token `atuin-bind` rewrites
+to `__atuin_history --keymap-mode=emacs` before dispatching to whichever
+`__atuin_bind_impl` suits the bash/ble.sh combination in play. Going through
+atuin's own binder keeps that translation and impl choice in atuin's hands.
 
 Troubleshooting dials live in `~/.blerc`, ordered by likelihood: auto-complete
 delay first, then syntax highlighting (`highlight_filename` is the one that
@@ -364,6 +370,7 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
   itself lives in `~/.local/share/blesh` and is updated out-of-band with
   `ble-update`. A version bump can change binding behaviour under `.blerc`
   without any commit here; the version in use is recorded in Part 2.
-- **`C-r` is claimed by both atuin and fzf** in ble.sh's emacs keymap, and which
-  one wins depends on load order at `ble-attach`. See the line-editor section
-  for the one-line override.
+- ~~**`C-r` is claimed by both atuin and fzf.**~~ Resolved — `.blerc` re-asserts
+  atuin's binding after the fzf module loads, and fzf's history widget moved to
+  `M-r`. Worth re-checking after any ble.sh or atuin update, since the fix
+  depends on hook ordering at `ble-attach`.

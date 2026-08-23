@@ -113,6 +113,26 @@ ble/util/import/eval-after-load integration/fzf-key-bindings '
   ble-bind -m vi_imap -x M-t fzf-file-widget
   ble-bind -m vi_nmap -s M-t "i\\M-t"'
 
+# C-r back to atuin. Both atuin and fzf bind it in the emacs keymap, and fzf was
+# winning: atuin binds during `atuin init bash` in .bashrc, but fzf's module is
+# deferred to ble-attach, which happens later, so it overwrote atuin.
+#
+# Re-run atuin's own binder rather than a hand-written ble-bind.
+# `atuin-search-emacs` is not a real widget -- it is a token atuin-bind rewrites to
+# `__atuin_history --keymap-mode=emacs` before dispatching to whichever
+# __atuin_bind_impl matches this bash/ble.sh combination. Calling atuin-bind
+# keeps that translation and impl selection in atuin hands. It survives init
+# (never unset), so it is still defined when this hook fires.
+#
+# fzf keeps the history widget on M-r, so both are reachable.
+ble/util/import/eval-after-load integration/fzf-key-bindings '
+  if ble/is-function atuin-bind; then
+    atuin-bind -m emacs     "\\C-r" atuin-search-emacs
+    atuin-bind -m vi-insert "\\C-r" atuin-search-viins
+  fi
+  ble-bind -m emacs   -x M-r fzf-history-widget
+  ble-bind -m vi_imap -x M-r fzf-history-widget'
+
 # Wraps __zoxide_z/__zoxide_zi so the terminal is handed over correctly during
 # the interactive `zi` picker. Self-initialises: it runs `zoxide init bash`
 # when it finds zoxide uninitialised, which is now the case.
