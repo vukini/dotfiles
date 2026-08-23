@@ -139,9 +139,11 @@ alias gwip='git add -A && git commit -m wip'
 alias lg='lazygit'
 
 # config files
-alias lh='nvim ~/.config/herbstluftwm/autostart'
+# The WM is StumpWM (see ~/.xinitrc). qtile and herbstluftwm are still
+# installed and their configs still exist, but nothing here drives them --
+# re-add aliases if you switch back.
+alias lsw='nvim ~/.stumpwmrc'
 alias lnv='nvim ~/.config/nvim'
-alias lq='nvim ~/.config/qtile/config.py'
 alias lresolv='sudo nvim /etc/resolv.conf'
 
 # files
@@ -151,13 +153,11 @@ alias xo='xdg-open'
 alias pdf='evince'
 
 # processes and system
-alias psg='ps aux | grep'
-alias fq='ps aux | grep qtile'
+alias psg='ps aux | grep'      # e.g. `psg stumpwm`
 alias kk='sudo kill -9'
 alias hg='history | grep'
 alias nmtui='sudo nmtui'
 alias swapcaps='setxkbmap -option ctrl:swapcaps'   # re-apply after keyboard hotplug
-alias rq='qtile cmd-obj -o cmd -f restart'
 
 # packages (xbps)
 alias pi='sudo xbps-install -S'
@@ -200,10 +200,6 @@ y() {
     if [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
         builtin cd -- "$cwd"
     fi
-}
-
-hc() {
-    herbstclient "$@"
 }
 
 # Restart the Emacs daemon cleanly, refusing to discard unsaved work.
@@ -291,8 +287,6 @@ fi
     . "$HOME/.opam/opam-init/init.sh" >/dev/null 2>&1
 
 [ -r "$HOME/.dircolors" ] && eval "$(dircolors -b "$HOME/.dircolors")"
-[ -r "$HOME/apps/herbstluftwm/share/herbstclient-completion.bash" ] && \
-    . "$HOME/apps/herbstluftwm/share/herbstclient-completion.bash"
 
 # Collapse duplicate PATH entries, keeping the first occurrence of each.
 # add_path above is already idempotent, but `rbenv init` and opam's init.sh

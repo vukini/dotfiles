@@ -103,9 +103,9 @@ reports the version and init time.
 | Group | Aliases |
 |---|---|
 | listing | `ls` `ll` `e` `et` `el` `lst` `lstf` (exa when installed) |
-| config | `b` `lh` `lq` `lresolv` |
+| config | `b` `lsw` (`~/.stumpwmrc`) `lnv` `lresolv` |
 | files | `chx` `cpr` `xo` `pdf` |
-| system | `psg` `fq` `kk` `hg` `nmtui` `swapcaps` `rq` |
+| system | `psg` `kk` `hg` `nmtui` `swapcaps` |
 | xbps | `pi` `pis` `piu` |
 | network | `pv` `didi` |
 | languages | `activate` `sb` `lisp` `cuis` |
@@ -179,6 +179,18 @@ expensive `rbenv rehash` runs on every eval regardless of where the script came
 from.
 
 **`47dbeea` — aliases.** The 34 above, plus `y()`. 45 → 79 aliases.
+
+**`1e7064f` — drop `setxkbmap` from `.bashrc`.** See the note above. Startup
+**~92 ms → ~68 ms**: it was forking a process in every interactive shell.
+
+**window-manager cleanup.** The WM is **StumpWM** (`~/.xinitrc`); qtile and
+herbstluftwm are commented out there. Removed the aliases that only made sense
+under those: `rq` (qtile restart), `fq` (`ps aux | grep qtile`, superseded by
+`psg qtile`), `lq`, `lh`, the `hc()` herbstclient wrapper, and the herbstclient
+completion source line. Added `lsw` for `~/.stumpwmrc`. 79 → 76 aliases.
+
+Both WMs and their config files are still installed and untouched — only the
+shell aliases went. Re-add them if you switch back.
 
 ### Emacs (`~/.emacs.d`, 5 commits)
 
@@ -254,10 +266,6 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
 - The `emacs-daemon` runit service is `sv down` and points at `/usr/bin/emacs`
   (30.2) while the daemon in use is 31.0.50. Editing the one line in
   `/run/runit/runsvdir/current/emacs-daemon/run` would make that permanent.
-- The window manager is **StumpWM** (`~/.xinitrc`), not qtile or herbstluftwm —
-  both are commented out there. The `rq`, `fq`, `lq` and `lh` aliases, the `hc`
-  function, and the herbstclient completion in `.bashrc` are all leftovers from
-  those and do nothing useful in a StumpWM session.
 - `~/.xinitrc` is not tracked in this repo; it now contains the `cd "$HOME"` that
   stops terminals inheriting whatever directory `startx` was run from.
 - `~/.dotfiles` has no remote.
