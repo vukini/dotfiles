@@ -192,9 +192,44 @@ emacs-restart() {
 # ------------------------------------------------------------------ tool init
 # These append to PROMPT_COMMAND, so they must come after custom_prompt.sh.
 
+# zoxide costs ~3 ms and its PROMPT_COMMAND hook must run from the first
+# prompt to record directory visits, so it stays eager.
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
-[ -x "$HOME/.local/bin/mise" ]    && eval "$("$HOME/.local/bin/mise" activate)"
-command -v rbenv  >/dev/null 2>&1 && eval "$(rbenv init - bash)"
+
+# rbenv -- lazy.
+# `eval "$(rbenv init - bash)"` costs ~50 ms, and ~28 ms of that is a startup
+# `rbenv rehash`. Only two things are needed for `ruby`, `gem` and `bundle` to
+# resolve: the shims directory on PATH, and RBENV_SHELL. Both are free, so set
+# them directly and defer the rest until the first actual `rbenv` command.
+#
+# Trade-off: a gem binary installed in this shell has no shim until something
+# rehashes. Running any `rbenv` command triggers full init (including rehash),
+# so `rbenv rehash` after `gem install` behaves exactly as before.
+if [ -d "$HOME/.rbenv/shims" ]; then
+    add_path "$HOME/.rbenv/shims"
+    export RBENV_SHELL=bash
+    rbenv() {
+        unset -f rbenv
+        eval "$(command rbenv init - bash)"
+        rbenv "$@"
+    }
+fi
+
+# mise -- lazy.
+# Activation costs ~25 ms to install a per-prompt hook. `mise ls` and
+# `mise config ls` are both empty, so it currently manages no tools and that
+# cost buys nothing. The stub loads it on first use instead.
+#
+# NOTE: while lazy, mise's per-directory auto-activation does NOT run. If you
+# start using mise to manage tool versions, delete this stub and restore:
+#     eval "$("$HOME/.local/bin/mise" activate bash)"
+if [ -x "$HOME/.local/bin/mise" ]; then
+    mise() {
+        unset -f mise
+        eval "$("$HOME/.local/bin/mise" activate bash)"
+        mise "$@"
+    }
+fi
 
 [ -r "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
 [ -r "$HOME/.opam/opam-init/init.sh" ] && \
