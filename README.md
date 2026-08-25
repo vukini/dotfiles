@@ -362,6 +362,43 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
   `/run/runit/runsvdir/current/emacs-daemon` symlinks to, and it already calls
   `/usr/local/bin/emacs` and is up. The stale copy was moved to
   `~/archive/emacs-daemon-old/`.
+  **Moved again 2026-08-25** — the service directory now lives at
+  `/etc/sv/emacs-daemon`, where every other runit service is, with
+  `/var/service/emacs-daemon` symlinked to it. Nothing under `$HOME` is
+  involved any more, so the two-directories confusion above cannot recur.
+  Only `run` was carried over — `supervise/` is recreated by runsv, and the two
+  `run.bak-*` copies were dropped with the old directory (the live script is the
+  one in `/etc/sv`, and `~/archive/emacs-daemon-old/` still holds the 2025 stale
+  service dir). The move itself needed no edit to the script
+  (it never derived paths from its own location), but it is now root-owned, so
+  editing it needs `sudo`. `sv down emacs-daemon` in `.bashrc` addresses the service by
+  name through `/var/service`, so it was unaffected.
+  The move also exposed a latent bug: `runsv` execs `run` with cwd set to the
+  service directory, so the daemon inherited it as its working directory and
+  every new frame, `*scratch*` and `find-file` started there. This was always
+  true — it just went unnoticed while the path was `~/service/emacs-daemon`
+  rather than a root-owned `/etc/sv` one. Fixed 2026-08-25 by a
+  `cd /home/vukini || exit 1` before the `exec`; `command-line-default-directory`
+  now reports `~/`. Same class of fix as the `cd "$HOME"` in `.xinitrc`.
+- **`~/bin/cuis` is not tracked anywhere.** The `cuis` alias and
+  `~/.local/share/applications/cuis.desktop` both point at that wrapper rather
+  than calling `RunCuisOnLinux.sh` directly, so the alias in this repo depends on
+  a script that is not in it (same situation as ble.sh below).
+  The wrapper exists because Cuis resolves `DirectoryEntry userBaseDirectory` to
+  `#currentDirectory`, not to the documented `<cuisBase>-UserFiles` sibling — so
+  launching from `$HOME` (which both entry points did) scattered `UserChanges/`
+  and `UserPrefs.txt` into the home directory. It passes `-ud <abs path>` to pin
+  them, and must also pass the image path explicitly, because
+  `RunCuisOnLinux.sh` only forwards arguments to the image after it has seen an
+  `.image` argument. The image is globbed from `CuisImage/`, so a version bump
+  needs no edit to the wrapper.
+  Points at **Cuis 7.8** (`~/apps/Cuis7-8`, a git clone) as of 2026-08-25; 7.8
+  has the same `userBaseDirectory` behaviour as 7.2, re-tested. The 7.2 tree at
+  `~/apps/Cuis7/` was deleted the same day — its user `.changes` files held only
+  startup and `CoreUpdates` fileIn records, no method or class definitions, so
+  there was no image work to lose.
+  Verified: launched from an unrelated directory, both that directory and `$HOME`
+  stay clean, and files land in `~/apps/Cuis7-8-UserFiles/`.
 - `~/.xinitrc` is not tracked in this repo; it now contains the `cd "$HOME"` that
   stops terminals inheriting whatever directory `startx` was run from.
 - ~~`~/.dotfiles` has no remote.~~ Resolved — `origin` is
