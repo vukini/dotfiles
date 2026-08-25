@@ -4,7 +4,7 @@
 #   * ble.sh is sourced early with --attach=none and attached LAST, after
 #     everything else has finished touching PROMPT_COMMAND and keybindings.
 #   * custom_prompt.sh assigns PROMPT_COMMAND=command_prompt (an assignment,
-#     not an append), so it must run BEFORE mise/zoxide/atuin add their hooks.
+#     not an append), so it must run BEFORE zoxide/atuin add their hooks.
 
 # --------------------------------------------------------------- interactive
 # Nothing below here should run for non-interactive shells (scp, rsync, ...).
@@ -294,22 +294,6 @@ if [ -d "$HOME/.rbenv/shims" ]; then
         unset -f rbenv
         eval "$(command rbenv init - bash)"
         rbenv "$@"
-    }
-fi
-
-# mise -- lazy.
-# Activation costs ~25 ms to install a per-prompt hook. `mise ls` and
-# `mise config ls` are both empty, so it currently manages no tools and that
-# cost buys nothing. The stub loads it on first use instead.
-#
-# NOTE: while lazy, mise's per-directory auto-activation does NOT run. If you
-# start using mise to manage tool versions, delete this stub and restore:
-#     eval "$("$HOME/.local/bin/mise" activate bash)"
-if [ -x "$HOME/.local/bin/mise" ]; then
-    mise() {
-        unset -f mise
-        eval "$("$HOME/.local/bin/mise" activate bash)"
-        mise "$@"
     }
 fi
 

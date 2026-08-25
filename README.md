@@ -234,6 +234,15 @@ Ctrl-R, fzf bindings, or zoxide's directory tracking to save a few milliseconds.
   `eval "$("$HOME/.local/bin/mise" activate bash)"` — the line is in a comment
   at the stub.
 
+> Superseded 2026-08-25: **mise was removed entirely**, stub and all. It never
+> managed a single tool. The one attempt, `mise use -g ruby@3` on 2025-12-02,
+> exited 1 because mise's Ruby backend compiles via `ruby-build`, which was not
+> installed on this box until 2026-03-04 — three months later. rbenv was
+> installed on 2025-12-28 as the fallback and has handled Ruby ever since
+> (3.4.6, Rails 8.1.1). Running two Ruby version managers with both shim sets on
+> PATH was the actual problem, so only one is kept. `~/.local/bin/mise`,
+> `~/.local/share/mise`, `~/.cache/mise` and the `.bashrc` stub are gone.
+
 Caching the generated scripts was measured too and does **not** help rbenv: the
 expensive `rbenv rehash` runs on every eval regardless of where the script came
 from.
