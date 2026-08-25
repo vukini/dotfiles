@@ -47,6 +47,7 @@ add_path /usr/local/lib64/LispWorksPersonal
 add_path "$HOME/.pixi/bin"
 add_path "$HOME/.rbenv/bin"
 add_path "$HOME/.npm-global/bin"   # npm global prefix; provides `claude`
+add_path "$HOME/.cargo/bin"                      after   # append: /usr/bin/exa is eza 0.23, the cargo one is dead exa 0.10
 export PATH
 
 # ------------------------------------------------------------------- history
@@ -170,6 +171,7 @@ alias kk='sudo kill -9'
 alias hg='history | grep'
 alias nmtui='sudo nmtui'
 alias swapcaps='setxkbmap -option ctrl:swapcaps'   # re-apply after keyboard hotplug
+alias off='sudo shutdown -h now'   # not `sh`: that is the Bourne shell
 
 # packages (xbps)
 alias pi='sudo xbps-install -S'
@@ -183,9 +185,11 @@ alias pv='ping voidlinux.org'   # was defined twice; the `-c 5` variant was shad
 
 # languages and tools
 alias activate='. .venv/bin/activate'
+alias jlab='source ~/venvs/jupyter-base/bin/activate && jupyter lab &'
+alias pydoc-html='xdg-open ~/pydocs/python-3.14-docs-html/index.html'
 alias sb='sbcl'
 alias lisp='/usr/local/lib64/LispWorksPersonal/lispworks-personal-8-0-1-amd64-linux'
-alias cuis='/home/vukini/apps/Cuis7/Cuis7-2-main/RunCuisOnLinux.sh &'
+alias cuis='$HOME/bin/cuis &'   # wrapper pins -ud so user files stay out of $PWD
 alias gc='git clone'
 
 # flask app (gunicorn under runit)
@@ -259,12 +263,20 @@ emacs-restart() {
 # zoxide costs ~3 ms and its PROMPT_COMMAND hook must run from the first
 # prompt to record directory visits, so it stays eager.
 #
-# 2026-08-23: moved into ble.sh. ~/.blerc imports integration/zoxide, which runs
-# `zoxide init bash` itself and then wraps __zoxide_z/__zoxide_zi with ble.sh-
-# aware advice. .blerc is read at ble.sh source time (line 18), i.e. BEFORE this
-# point -- so re-running init here would redefine those functions and silently
-# discard the wrappers. Re-enable this line only if you drop the .blerc import.
-#command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
+# It MUST be initialised here, after custom_prompt.sh, not from ~/.blerc.
+# custom_prompt.sh:105 does `PROMPT_COMMAND=command_prompt` -- an assignment,
+# not an append -- so any hook installed before it is silently wiped. .blerc is
+# read at ble.sh source time (line 18), and integration/zoxide self-initialises
+# when it finds zoxide uninitialised; that put __zoxide_hook in PROMPT_COMMAND
+# too early, custom_prompt.sh dropped it, and zoxide stopped recording visits
+# entirely (symptom: `zoxide: detected a possible configuration issue`).
+#
+# This does not fight the .blerc import. integration/zoxide only runs
+# `zoxide init bash` when it finds no __zoxide_* functions to wrap; with them
+# already defined it takes the other branch and just advises them, so the
+# ble.sh-aware `zi` picker wrappers survive. Init is idempotent regardless --
+# the hook install is guarded by a `!= *__zoxide_hook*` test.
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 
 # rbenv -- lazy.
 # `eval "$(rbenv init - bash)"` costs ~50 ms, and ~28 ms of that is a startup
@@ -356,3 +368,5 @@ if _is_rich_term; then
 fi
 
 echo "Successfully sourced .bashrc"
+
+. "$HOME/.local/bin/env"
