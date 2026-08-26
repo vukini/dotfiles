@@ -1,0 +1,23 @@
+#!/bin/sh
+# Launch Cuis Smalltalk with its user files pinned.
+#
+# Without -ud, Cuis resolves DirectoryEntry userBaseDirectory to
+# #currentDirectory rather than the documented <cuisBase>-UserFiles sibling, so
+# launching from $HOME scatters UserChanges/ and UserPrefs.txt into it.
+# Re-verified against 7.8: same behaviour, so the pin is still required.
+#
+# The image path must be passed explicitly: RunCuisOnLinux.sh only forwards
+# arguments to the image once it has seen an .image argument -- before that they
+# are collected as VM arguments, and -ud would be swallowed.  It is globbed
+# rather than hardcoded so a version bump (7.8 -> 7.9) needs no edit here.
+BASE=/home/vukini/apps/Cuis7-8
+UD="${BASE}-UserFiles"
+
+IMAGE=$(find "$BASE/CuisImage" -maxdepth 1 -name '*.image' ! -name '.*' | head -n 1)
+if [ -z "$IMAGE" ]; then
+    echo "cuis: no .image found in $BASE/CuisImage" >&2
+    exit 1
+fi
+
+mkdir -p "$UD" || exit 1
+exec "$BASE/RunCuisOnLinux.sh" "$IMAGE" -ud "$UD" "$@"

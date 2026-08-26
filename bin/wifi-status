@@ -1,0 +1,10 @@
+#!/bin/sh
+# Wireless status for the StumpWM mode-line.
+# Prints e.g. "VID -67 dBm", or "no link" when associated to nothing.
+# Uses iw (nl80211); the stumpwm wifi module's iwconfig is not installed here.
+dev=$(iw dev 2>/dev/null | awk '/Interface/{print $2; exit}')
+[ -n "$dev" ] || { printf 'no wifi'; exit 0; }
+iw dev "$dev" link 2>/dev/null | awk '
+  /SSID:/   { s = $2 }
+  /signal:/ { q = $2 }
+  END { if (s) printf "%s %s dBm", s, q; else printf "no link" }'

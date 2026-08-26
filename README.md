@@ -389,7 +389,15 @@ path in `eglot-server-programs` to be found. `ccls` works and is already wired u
   rather than a root-owned `/etc/sv` one. Fixed 2026-08-25 by a
   `cd /home/vukini || exit 1` before the `exec`; `command-line-default-directory`
   now reports `~/`. Same class of fix as the `cd "$HOME"` in `.xinitrc`.
-- **`~/bin/cuis` is not tracked anywhere.** The `cuis` alias and
+- ~~**`~/bin/cuis` is not tracked anywhere.**~~ **Resolved 2026-08-26 — `bin/`
+  is now in this repo.** The hand-written scripts live at `.dotfiles/bin/` and
+  `~/bin/<name>` symlinks to `../.dotfiles/bin/<name>`, matching how `~/.bashrc`
+  points at `bash/.bashrc`. Deliberately **not** tracked, because they are
+  third-party binaries totalling ~324M: `obsidian` (120M), `odin-bin/` (197M),
+  `love`, `ols`, `odinfmt`, plus the `herbstclient`/`herbstluftwm`/`tresorit`
+  symlinks into `~/apps`, which are machine-specific. `bin/sp` is a symlink to
+  `scratchpad` in-repo; the two used to be byte-identical copies.
+  The `cuis` alias and
   `~/.local/share/applications/cuis.desktop` both point at that wrapper rather
   than calling `RunCuisOnLinux.sh` directly, so the alias in this repo depends on
   a script that is not in it (same situation as ble.sh below).

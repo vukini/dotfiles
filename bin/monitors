@@ -1,0 +1,21 @@
+#!/bin/sh
+case "$1" in
+    1)
+        xrandr --output eDP1 --auto --output DP2 --off --output HDMI1 --off
+	herbstclient detect_monitors
+	# kill $(pgrep polybar)
+	herbstclient list_monitors
+	herbstclient remove_monitor 3
+	herbstclient remove_monitor 2
+	echo $MONITORS
+        ;;
+    2)
+        xrandr --output eDP1 --auto --output DP2 --auto --left-of eDP1 --output HDMI1 --off
+	herbstclient detect_monitors
+	herbstclient remove_monitor 3
+        ;;
+    3)
+        xrandr --output eDP1 --auto --output DP2 --auto --left-of eDP1 --output HDMI1 --auto --right-of eDP1
+	herbstclient detect_monitors
+        ;;
+esac

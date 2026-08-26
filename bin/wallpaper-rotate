@@ -1,0 +1,40 @@
+#!/bin/sh
+# Set a random wallpaper from $WALLPAPER_DIR every $WALLPAPER_INTERVAL seconds
+# (default 900 = 15 minutes).
+# Started from ~/.stumpwmrc; run by hand for a different folder or cadence:
+#   WALLPAPER_INTERVAL=60 wallpaper-rotate
+
+DIR="${WALLPAPER_DIR:-$HOME/wallpapers}"
+INTERVAL="${WALLPAPER_INTERVAL:-900}"
+LOCK="${XDG_RUNTIME_DIR:-/tmp}/wallpaper-rotate.lock"
+
+# Only one rotator at a time.  StumpWM's restart-hard re-execs the image and
+# re-runs the rc, so without this every restart would leave another loop behind,
+# all racing to own the root window.
+exec 9>"$LOCK" || exit 1
+flock -n 9 || exit 0
+
+# Children must NOT inherit the lock fd.  An orphaned `sleep` still holding it
+# would keep a replacement rotator locked out for the rest of the interval,
+# which is exactly the window a WM restart lands in.  dash happens to relocate
+# and CLOEXEC this fd for us, but that is dash-specific, so each child below
+# closes it explicitly with `9>&-`.
+
+last=""
+while :; do
+  # Re-listed every cycle so files added to the folder are picked up without a
+  # restart.  grep -Fxv drops the current one: with 24 images an unlucky repeat
+  # otherwise looks like the timer died.
+  list=$(find "$DIR" -maxdepth 1 -type f \
+              \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+                 -o -iname '*.webp' -o -iname '*.bmp' \) 2>/dev/null)
+  pick=$(printf '%s\n' "$list" | grep -Fxv "$last" | shuf -n 1)
+  [ -n "$pick" ] || pick=$(printf '%s\n' "$list" | shuf -n 1)
+
+  if [ -n "$pick" ]; then
+    # --no-fehbg: feh would otherwise rewrite ~/.fehbg every single minute.
+    feh --no-fehbg --bg-fill "$pick" 9>&- && last="$pick"
+  fi
+
+  sleep "$INTERVAL" 9>&-
+done

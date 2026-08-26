@@ -1,0 +1,27 @@
+#!/bin/sh
+# Snapshot atuin: history + record store + kv/scripts, plus config and the
+# encryption key. VACUUM INTO is a safe hot backup -- it folds in the -wal so
+# you never capture a torn database, unlike `cp`.
+set -eu
+
+dest="${1:-$HOME/backups/atuin}/$(date +%Y%m%d-%H%M%S)"
+data="${XDG_DATA_HOME:-$HOME/.local/share}/atuin"
+conf="${XDG_CONFIG_HOME:-$HOME/.config}/atuin"
+
+mkdir -p "$dest"
+
+# db_path is customised to ~/.history.db in config.toml
+for db in "$HOME/.history.db" "$data/records.db" "$data/kv.db" "$data/scripts.db"; do
+    [ -f "$db" ] || continue
+    sqlite3 "$db" "VACUUM INTO '$dest/$(basename "$db" | sed s/^\\.//)';"
+done
+
+# key = the sync encryption key. Lose it and server-side history is unreadable.
+for f in "$conf/config.toml" "$data/key" "$data/host_id"; do
+    [ -f "$f" ] && cp -p "$f" "$dest/"
+done
+cp -rp "$data/dotfiles" "$dest/" 2>/dev/null || true
+
+chmod -R go-rwx "$dest"
+printf '%s\n' "atuin backed up to $dest"
+du -sh "$dest"
