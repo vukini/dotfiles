@@ -1,10 +1,20 @@
+# >>> vikix aliases >>>
+[ -f "$HOME/.config/vikix/vikix.bash" ] && . "$HOME/.config/vikix/vikix.bash"
+# <<< vikix aliases <<<
 # ~/.bashrc  -- real file lives at ~/.dotfiles/bash/.bashrc
+#
+# Only what is particular to this machine and to me. Everything general --
+# history, listing, moving around, git, editors, xbps, fzf, atuin, zoxide,
+# yazi, ssh-agent -- comes from Vikix, read by the block above
+# (~/.config/vikix/vikix.bash; `alias` lists it all). Anything below runs
+# later, so it wins.
 #
 # Load order matters in two places:
 #   * ble.sh is sourced early with --attach=none and attached LAST, after
 #     everything else has finished touching PROMPT_COMMAND and keybindings.
 #   * custom_prompt.sh assigns PROMPT_COMMAND=command_prompt (an assignment,
-#     not an append), so it must run BEFORE zoxide/atuin add their hooks.
+#     not an append), wiping the hooks Vikix installed, so zoxide and atuin
+#     are initialised again after it.
 
 # --------------------------------------------------------------- interactive
 # Nothing below here should run for non-interactive shells (scp, rsync, ...).
@@ -19,12 +29,13 @@ if _is_rich_term && [[ -r "$HOME/.local/share/blesh/ble.sh" ]]; then
 fi
 
 # ------------------------------------------------------------------- secrets
-# API keys live outside this file so it can be committed safely.
-# ~/.config/shell/secrets.env is mode 600 and gitignored.
+# API keys and host-specific aliases (ssh targets) live outside this file so
+# it can be committed safely. ~/.config/shell/secrets.env is mode 600 and
+# gitignored.
 [ -r "$HOME/.config/shell/secrets.env" ] && . "$HOME/.config/shell/secrets.env"
 
 # ---------------------------------------------------------------------- PATH
-# Idempotent, so re-sourcing this file (alias `r`) no longer grows PATH.
+# Idempotent, so re-sourcing this file (alias `r`) doesn't grow PATH.
 # Missing directories are skipped rather than added blindly.
 add_path() {
     # add_path DIR [after]   -- prepends by default
@@ -50,147 +61,58 @@ add_path "$HOME/.npm-global/bin"   # npm global prefix; provides `claude`
 add_path "$HOME/.cargo/bin"                      after   # append: /usr/bin/exa is eza 0.23, the cargo one is dead exa 0.10
 export PATH
 
-# ------------------------------------------------------------------- history
-HISTSIZE=10000
-HISTFILESIZE=20000
-export HISTCONTROL=ignoreboth:erasedups
-shopt -s histappend
-
-# No history juggling in PROMPT_COMMAND: atuin already provides cross-shell
-# history, and `history -c; history -r` re-read the whole file every prompt.
-
-# ------------------------------------------------------------- shell options
-shopt -s checkwinsize
 export TERMINAL='kitty'
 
-# Caps -> Ctrl is applied once per X session by ~/.xinitrc, so it is
-# deliberately NOT run here. Use the `swapcaps` alias to re-apply it by hand
-# (e.g. after hotplugging a keyboard, which resets xkb options).
-
 # -------------------------------------------------------------------- prompt
-# Sets PROMPT_COMMAND=command_prompt, which rebuilds PS1 each prompt.
-# Must precede the tool hooks below.
+# Sets PROMPT_COMMAND=command_prompt, which rebuilds PS1 each prompt, and
+# replaces Vikix's prompt. Must precede the tool hooks below.
 [ -r "$HOME/bin/custom_prompt.sh" ] && . "$HOME/bin/custom_prompt.sh"
 
-# ------------------------------------------------------------------- aliases
-
-# navigation and listing
-alias ..='z ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
-alias d='dirs -v'          # numbered directory stack; use with pushd/popd
-alias cd-='cd -'           # previous directory
-alias mkd='mkdir -p'
-alias ls='ls --color=auto'
-alias ll='ls -lah --color=auto'
-if command -v eza >/dev/null 2>&1; then
-    alias ls='eza --group-directories-first --icons=auto'
-    alias ll='eza -lha --group-directories-first --icons=auto'
-    alias e='eza'
-    alias et='eza'
-    alias el='eza -l'
-    alias lst='eza -l --tree --level=2'
-    alias lstf='eza -l --tree'
-fi
-
-# editors and this file
-alias n='nvim'
+# ------------------------------------------------------------ my own names
+# Habits from before Vikix. Vikix's name for the same thing, if any, is in
+# brackets.
+alias n='nvim'                          # (v)
+alias nv='nvim'                         # (v)
 alias nf='n $(fzf)'
-alias ec='emacsclient -nw'
-alias b='nvim ~/.bashrc'
-alias eb='emacsclient -nw ~/.bashrc'
-alias r='source ~/.bashrc'
-
-# nvim
-alias nv='nvim'
-alias nvd='nvim -d'                     # diff two files
+alias eb='emacsclient -nw ~/.bashrc'    # (bb: in $EDITOR)
 alias nvc='nvim ~/.config/nvim/init.lua'
+alias lnv='nvim ~/.config/nvim'
+alias lsw='nvim ~/.stumpwm.d/user.lisp' # was ~/.stumpwmrc, which Vikix turned into user.lisp
+alias lresolv='sudo nvim /etc/resolv.conf'
+nn() {
+    cd "$HOME/.config/nvim" || return
+    nvim "$HOME/.config/nvim/init.lua"
+}
 
-# emacs  (ec = emacsclient -nw, eb = edit this file, both above)
-alias eg='emacsclient -c -n -a ""'      # new GUI frame, returns immediately
-alias eq='emacs -Q -nw'                 # vanilla emacs, no config -- for debugging
-alias ekill="emacsclient -e '(kill-emacs)'"
-# see also the emacs-restart function below
+alias et='eza'
+alias el='eza -l'
+alias lst='eza -l --tree --level=2'     # (lt, without the long listing)
+alias lstf='eza -l --tree'
+alias pdf='evince'                      # xdg-open uses zathura
 
-# git
-# `gs`, `gp` and `ya` are deliberately NOT used: they are taken by
-# ghostscript, PARI/GP, and yazi's own package manager respectively.
-alias g='git'
-alias gst='git status -sb'
-alias ga='git add'
-alias gaa='git add -A'
-alias gcm='git commit -m'
-alias gca='git commit -a -m'
-alias gamend='git commit --amend --no-edit'
-alias gco='git checkout'
-alias gsw='git switch'
-alias gb='git branch -vv'
-alias gd='git diff'
-alias gds='git diff --staged'
-alias gl='git log --oneline --graph --decorate -20'
-alias gla='git log --oneline --graph --decorate --all -30'
-alias gps='git push'
-alias gpl='git pull --ff-only'
-alias gf='git fetch --all --prune'
-alias gr='git remote -v'
-alias gsh='git stash'
-alias gshp='git stash pop'
-alias gundo='git reset --soft HEAD~1'   # undo last commit, keep changes staged
-alias gwip='git add -A && git commit -m wip'
-alias lg='lazygit'
+alias kk='sudo kill -9'
+alias off='sudo shutdown -h now'   # not `sh`: that is the Bourne shell
+alias nmtui='sudo nmtui'
+alias swapcaps='vikix-keyboard'    # re-apply ~/.config/vikix/keyboard after a keyboard hotplug
+
+alias pi='sudo xbps-install -S'         # (xi)
+alias pis='sudo xbps-query -Rs'         # (xs)
+alias piu='sudo xbps-install -Syu'      # (xu)
+
+alias sb='sbcl'
 
 # recovered from the old ml4w ~/dotfiles/10-aliases fragment (deleted 2026-08-23)
-#
-# NOT recovered: `gs` and `gp`. The fragment defined both, but they are real
-# binaries here -- gs is ghostscript, gp is PARI/GP -- and aliasing them would
-# shadow the commands. `gst` and `gps` exist precisely to avoid that; see the
-# note at the top of the Git section in README.md.
 alias gfo='git fetch origin'           # narrower than gf
-alias gcheck='git checkout'            # duplicate of gco
+alias gcheck='git checkout'            # (gco)
 alias gsp='git stash; git pull'
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
-# config files
-# The WM is StumpWM (see ~/.xinitrc). qtile and herbstluftwm are still
-# installed and their configs still exist, but nothing here drives them --
-# re-add aliases if you switch back.
-alias lsw='nvim ~/.stumpwmrc'
-alias lnv='nvim ~/.config/nvim'
-alias lresolv='sudo nvim /etc/resolv.conf'
+alias pv='ping voidlinux.org'
 
-# files
-alias chx='chmod +x'
-alias cpr='cp -r'
-alias xo='xdg-open'
-alias pdf='evince'
-
-# processes and system
-alias psg='ps aux | grep'      # e.g. `psg stumpwm`
-alias kk='sudo kill -9'
-alias hg='history | grep'
-alias nmtui='sudo nmtui'
-alias swapcaps='setxkbmap -option ctrl:swapcaps'   # re-apply after keyboard hotplug
-alias off='sudo shutdown -h now'   # not `sh`: that is the Bourne shell
-
-# packages (xbps)
-alias pi='sudo xbps-install -S'
-alias pis='sudo xbps-query -Rs'
-alias piu='sudo xbps-install -Syu'
-
-# network
-alias pv='ping voidlinux.org'   # was defined twice; the `-c 5` variant was shadowed
-# Host-specific aliases (ssh targets etc.) live in ~/.config/shell/secrets.env,
-# which is mode 600 and gitignored, so no hostnames land in this repo.
-
-# languages and tools
-alias activate='. .venv/bin/activate'
-alias jlab='source ~/venvs/jupyter-base/bin/activate && jupyter lab &'
+# ------------------------------------------------------- this machine's tools
 alias pydoc-html='xdg-open ~/pydocs/python-3.14-docs-html/index.html'
-alias sb='sbcl'
 alias lisp='/usr/local/lib64/LispWorksPersonal/lispworks-personal-8-0-1-amd64-linux'
 alias cuis='$HOME/bin/cuis &'   # wrapper pins -ud so user files stay out of $PWD
-alias gc='git clone'
 
 # flask app (gunicorn under runit)
 alias start-app='sudo sv restart gunicorn.service'
@@ -198,28 +120,8 @@ alias status-app='sudo sv status gunicorn'
 alias check-app='sudo journalctl -u gunicorn -n 50 --no-pager'
 alias db-edit='sudo -u postgres psql'
 
-# ------------------------------------------------------------------ functions
-
-nn() {
-    cd "$HOME/.config/nvim" || return
-    nvim "$HOME/.config/nvim/init.lua"
-}
-
-# yazi, leaving the shell in whatever directory you quit from.
-# Must be a function, not an alias: a child process cannot change our cwd.
-# Quit with `q` to cd there; `Q` quits without changing directory.
-y() {
-    local tmp cwd
-    tmp="$(mktemp -t yazi-cwd.XXXXXX)" || return
-    yazi "$@" --cwd-file="$tmp"
-    cwd="$(command cat -- "$tmp" 2>/dev/null)"
-    rm -f -- "$tmp"          # removed before any early exit, so it never leaks
-    if [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-        builtin cd -- "$cwd"
-    fi
-}
-
-# Restart the Emacs daemon cleanly, refusing to discard unsaved work.
+# Replaces Vikix's emacs-restart: here Emacs 31 is built into /usr/local,
+# and a runit service (emacs-daemon) runs a daemon too.
 emacs-restart() {
     local bin=/usr/local/bin/emacs   # 31.0.50; /usr/bin/emacs is 30.2
 
@@ -260,16 +162,14 @@ emacs-restart() {
 # ------------------------------------------------------------------ tool init
 # These append to PROMPT_COMMAND, so they must come after custom_prompt.sh.
 
-# zoxide costs ~3 ms and its PROMPT_COMMAND hook must run from the first
-# prompt to record directory visits, so it stays eager.
+# zoxide, again: custom_prompt.sh above wiped the hook Vikix installed, and
+# the hook must run from the first prompt to record directory visits.
 #
-# It MUST be initialised here, after custom_prompt.sh, not from ~/.blerc.
-# custom_prompt.sh:105 does `PROMPT_COMMAND=command_prompt` -- an assignment,
-# not an append -- so any hook installed before it is silently wiped. .blerc is
-# read at ble.sh source time (line 18), and integration/zoxide self-initialises
-# when it finds zoxide uninitialised; that put __zoxide_hook in PROMPT_COMMAND
-# too early, custom_prompt.sh dropped it, and zoxide stopped recording visits
-# entirely (symptom: `zoxide: detected a possible configuration issue`).
+# It MUST be initialised here, not from ~/.blerc: .blerc is read at ble.sh
+# source time (above), and integration/zoxide self-initialises when it finds
+# zoxide uninitialised; that put __zoxide_hook in PROMPT_COMMAND too early,
+# custom_prompt.sh dropped it, and zoxide stopped recording visits entirely
+# (symptom: `zoxide: detected a possible configuration issue`).
 #
 # This does not fight the .blerc import. integration/zoxide only runs
 # `zoxide init bash` when it finds no __zoxide_* functions to wrap; with them
@@ -301,8 +201,6 @@ fi
 [ -r "$HOME/.opam/opam-init/init.sh" ] && \
     . "$HOME/.opam/opam-init/init.sh" >/dev/null 2>&1
 
-[ -r "$HOME/.dircolors" ] && eval "$(dircolors -b "$HOME/.dircolors")"
-
 # Collapse duplicate PATH entries, keeping the first occurrence of each.
 # add_path above is already idempotent, but `rbenv init` and opam's init.sh
 # re-prepend their directories unconditionally every time they run, so
@@ -325,27 +223,22 @@ _dedupe_path
 # --------------------------------------------------------- interactive extras
 # Widgets and keybindings that only make sense in a real terminal.
 if _is_rich_term; then
+    # wikiman (installed by hand, not from xbps): Ctrl+F searches the docs.
     [ -r /usr/share/wikiman/widgets/widget.bash ] && \
         . /usr/share/wikiman/widgets/widget.bash
 
-    # 2026-08-23: fzf shell integration moved into ble.sh (~/.blerc imports
-    # integration/fzf-completion and fzf-key-bindings). Those bind C-t/C-r via
-    # `ble-bind`, which ble.sh honours; the stock `fzf --bash` uses readline
-    # `bind -x`, which ble.sh does not -- running both double-binds the keys.
-    #
-    # These two lines were ALSO initialising fzf twice: ~/.fzf.bash itself ends
-    # in `eval "$(fzf --bash)"`, so the eval below ran, then ran again on the
-    # next line. Both are now off; .blerc owns fzf.
-    #command -v fzf >/dev/null 2>&1 && eval "$(fzf --bash)"
-    #[ -r "$HOME/.fzf.bash" ] && . "$HOME/.fzf.bash"
-
-    # ...but keep what .fzf.bash did besides the eval: put ~/.fzf/bin on PATH
-    # for fzf-tmux and fzf-preview.sh. (The fzf binary itself comes from
-    # /usr/bin/fzf 0.74.3 -- this appends, so the system one still wins.)
+    # fzf's key bindings come from ble.sh (~/.blerc imports
+    # integration/fzf-completion and fzf-key-bindings), which binds them via
+    # `ble-bind`; the stock `fzf --bash` uses readline `bind -x`, which
+    # would double-bind the keys. Only ~/.fzf/bin is needed from ~/.fzf.bash:
+    # fzf-tmux and fzf-preview.sh. (The fzf binary itself comes from
+    # /usr/bin/fzf -- this appends, so the system one still wins.)
     [[ ":$PATH:" == *":$HOME/.fzf/bin:"* ]] || PATH="${PATH:+$PATH:}$HOME/.fzf/bin"
 
+    # atuin, again (custom_prompt.sh wiped its hook too). As in Vikix: Ctrl+R
+    # searches; the Up arrow stays plain history.
     [ -r "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
-    command -v atuin >/dev/null 2>&1 && eval "$(atuin init bash)"
+    command -v atuin >/dev/null 2>&1 && eval "$(atuin init bash --disable-up-arrow)"
 
     # Must be last: ble.sh takes over the line editor.
     [[ ${BLE_VERSION-} ]] && ble-attach
