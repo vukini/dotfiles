@@ -247,3 +247,10 @@ fi
 echo "Successfully sourced .bashrc"
 
 . "$HOME/.local/bin/env"
+
+# Free Pascal 3.2.2 + Lazarus 4.8, built by fpcupdeluxe in ~/fpcupdeluxe.
+# fpc finds its config through ~/fpcupdeluxe/fpc/bin/etc/fpc.cfg (a link).
+# Lazarus keeps its settings in config_lazarus, so lazbuild needs --pcp.
+[[ ":$PATH:" == *":$HOME/fpcupdeluxe/fpc/bin/x86_64-linux:"* ]] || PATH="$HOME/fpcupdeluxe/fpc/bin/x86_64-linux:$PATH"
+alias lazbuild='$HOME/fpcupdeluxe/lazarus/lazbuild --pcp=$HOME/fpcupdeluxe/config_lazarus'
+alias lazarus='$HOME/Lazarus_fpcupdeluxe.sh'
