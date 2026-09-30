@@ -105,17 +105,53 @@ alias sb='sbcl'
 alias gfo='git fetch origin'           # narrower than gf
 alias gcheck='git checkout'            # (gco)
 alias gsp='git stash; git pull'
+# _gcatchup DIR: when GitHub has commits this repo doesn't (another
+# machine or session pushed), put ours on top of them with a rebase.
+# Refuses, changing nothing, when there are uncommitted changes, or when
+# a commit not yet pushed carries a tag: a rebase gives it a new id and
+# the tag would stay on the old one (a session re-tags those). A conflict
+# is undone, so the repo is left as it was.
+_gcatchup() {
+  local r=$1 tagged new
+  git -C "$r" fetch -q origin || { echo "   couldn't fetch from GitHub"; return 1; }
+  new=$(git -C "$r" rev-list --count '..@{u}' 2>/dev/null || echo 0)
+  [ "$new" -gt 0 ] || return 0   # nothing new there
+  if [ -z "$(git -C "$r" log --oneline '@{u}..')" ]; then   # none of ours: a fast-forward, as a plain pull
+    git -C "$r" merge -q --ff-only '@{u}' && echo "   caught up: $new new from GitHub"
+    return
+  fi
+  if ! git -C "$r" diff --quiet || ! git -C "$r" diff --cached --quiet; then
+    echo "   GitHub has new commits, and there are uncommitted changes: commit them, then try again"
+    return 1
+  fi
+  tagged=$(git -C "$r" log --format=%H '@{u}..' | while read -r c; do git -C "$r" tag --points-at "$c"; done)
+  if [ -n "$tagged" ]; then
+    echo "   GitHub has new commits, and this release isn't pushed yet: $(echo $tagged)"
+    echo "   ask a session to rebase it onto origin/main and move the tag"
+    return 1
+  fi
+  if git -C "$r" rebase -q '@{u}' >/dev/null 2>&1; then
+    echo "   caught up: $new new from GitHub, ours on top"
+  else
+    git -C "$r" rebase --abort 2>/dev/null
+    echo "   GitHub's new commits clash with ours; left as it was. Ask a session to rebase and resolve it"
+    return 1
+  fi
+}
+
 # gpush [DIR...]: make sure these repos are on GitHub, commits and tags
 # (the plain `git push` gup used to do left tags behind). Without DIRs,
 # the Vikix project: the dev repo and the Emacs config (emacs-void).
-# Uncommitted changes are only listed.
+# Uncommitted changes are only listed. When GitHub has moved on, it
+# catches up first (_gcatchup) and pushes again.
 gpush() {
   local r ok=0 missing
   [ $# -gt 0 ] || set -- ~/General/Living-in-Life/vikix ~/.emacs.d
   for r in "$@"; do
     echo "== ${r/#$HOME/\~}"
     git -C "$r" status --short | grep -v '^??' | sed 's/^/   not committed: /'
-    git -C "$r" push --follow-tags -q || { ok=1; continue; }
+    git -C "$r" push --follow-tags -q 2>/dev/null ||
+      { _gcatchup "$r" && git -C "$r" push --follow-tags -q; } || { ok=1; continue; }
     missing=$(comm -23 <(git -C "$r" tag | sort) \
       <(git -C "$r" ls-remote --tags origin | sed -n 's|.*refs/tags/\([^^]*\)$|\1|p' | sort))
     # shellcheck disable=SC2086  # one tag a word
@@ -129,6 +165,10 @@ gpush() {
   done
   return $ok
 }
+# gpl: pull, and when both sides have new commits, put ours on top
+# (_gcatchup) instead of refusing. Replaces Vikix's `git pull --ff-only`.
+unalias gpl 2>/dev/null
+gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git log -1 --format='%h %s' | cut -c1-60)"; }
 alias gup='gpush && vikix update'   # push everything, then pull it into ~/vikix as a user would
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
 alias gall='gpush ~/General/Living-in-Life/vikix ~/.emacs.d ~/.dotfiles'   # all three
