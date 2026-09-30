@@ -105,6 +105,33 @@ alias sb='sbcl'
 alias gfo='git fetch origin'           # narrower than gf
 alias gcheck='git checkout'            # (gco)
 alias gsp='git stash; git pull'
+# gpush [DIR...]: make sure these repos are on GitHub, commits and tags
+# (the plain `git push` gup used to do left tags behind). Without DIRs,
+# the Vikix project: the dev repo and the Emacs config (emacs-void).
+# Uncommitted changes are only listed.
+gpush() {
+  local r ok=0 missing
+  [ $# -gt 0 ] || set -- ~/General/Living-in-Life/vikix ~/.emacs.d
+  for r in "$@"; do
+    echo "== ${r/#$HOME/\~}"
+    git -C "$r" status --short | grep -v '^??' | sed 's/^/   not committed: /'
+    git -C "$r" push --follow-tags -q || { ok=1; continue; }
+    missing=$(comm -23 <(git -C "$r" tag | sort) \
+      <(git -C "$r" ls-remote --tags origin | sed -n 's|.*refs/tags/\([^^]*\)$|\1|p' | sort))
+    # shellcheck disable=SC2086  # one tag a word
+    [ -z "$missing" ] || git -C "$r" push -q origin $missing || ok=1
+    git -C "$r" fetch -q origin
+    if [ -n "$(git -C "$r" log --oneline '@{u}..' 2>/dev/null)" ]; then
+      echo "   still ahead of origin"; ok=1
+    else
+      echo "   pushed: $(git -C "$r" log -1 --format='%h %s' | cut -c1-60)"
+    fi
+  done
+  return $ok
+}
+alias gup='gpush && vikix update'   # push everything, then pull it into ~/vikix as a user would
+alias gdots='gpush ~/.dotfiles'     # these dotfiles
+alias gall='gpush ~/General/Living-in-Life/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
 alias pv='ping voidlinux.org'
