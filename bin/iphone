@@ -1,0 +1,106 @@
+#!/bin/sh
+# iphone — the iPhone over the USB cable (usbmuxd + libimobiledevice + ifuse).
+# Keys: Super+Shift+i (a menu); aliases ipm ipu ips ipo ipp ipb in ~/.bashrc.
+# Note: ~/General/Computing/Linux/iPhone on Linux.md
+
+MNT="$HOME/iphone"
+PHOTOS="${IPHONE_PHOTOS:-$HOME/Pictures/iphone}"
+BACKUP="${IPHONE_BACKUP:-$HOME/backups/iphone}"
+
+say() {
+    # To the terminal if there is one, else as a notification.
+    if [ -t 1 ]; then echo "$*"; else notify-send -a iPhone "iPhone" "$*"; fi
+}
+
+mounted() { mountpoint -q "$MNT"; }
+
+connected() {
+    [ -n "$(idevice_id -l 2>/dev/null)" ] || { say "No iPhone found. Plug it in and unlock it."; exit 1; }
+}
+
+paired() {
+    idevicepair validate >/dev/null 2>&1 && return 0
+    idevicepair pair >/dev/null 2>&1 && return 0
+    say "Not paired. Unlock the iPhone, tap Trust, then try again."
+    exit 1
+}
+
+do_mount() {
+    mounted && { say "Already mounted at $MNT"; return 0; }
+    connected; paired
+    mkdir -p "$MNT"
+    if ifuse "$MNT"; then say "Mounted at $MNT"; else say "Mount failed (is the phone unlocked?)"; exit 1; fi
+}
+
+users() {
+    # Processes whose working directory or open files are inside $MNT, one per
+    # line: "PID NAME (in PARENT) — PATH". Reads /proc; lsof can hang on ifuse.
+    for p in /proc/[0-9]*; do
+        pid=${p#/proc/}
+        where=$(readlink "$p/cwd" 2>/dev/null)
+        case "$where" in "$MNT"|"$MNT"/*) ;; *)
+            where=$(for f in "$p"/fd/*; do readlink "$f"; done 2>/dev/null |
+                    grep -m1 -e "^$MNT\$" -e "^$MNT/") ;;
+        esac
+        [ -n "$where" ] || continue
+        name=$(cat "$p/comm" 2>/dev/null)
+        parent=$(cat "/proc/$(awk '{print $4}' "$p/stat" 2>/dev/null)/comm" 2>/dev/null)
+        echo "$pid $name${parent:+ (in $parent)} — ${where#"$HOME"/}"
+    done
+}
+
+do_unmount() {
+    mounted || { say "Not mounted."; return 0; }
+    fusermount -u "$MNT" 2>/dev/null && { say "Unmounted. Safe to unplug."; return 0; }
+    busy=$(users)
+    if [ -n "$busy" ]; then
+        say "Unmount failed. Still using $MNT:
+$busy
+Close those (or cd out), then run ipu again."
+    else
+        say "Unmount failed: $MNT is busy, but no process was found using it."
+    fi
+    exit 1
+}
+
+do_status() {
+    if [ -z "$(idevice_id -l 2>/dev/null)" ]; then
+        say "No iPhone connected."; return 0
+    fi
+    name=$(ideviceinfo -k DeviceName 2>/dev/null)
+    ios=$(ideviceinfo -k ProductVersion 2>/dev/null)
+    batt=$(ideviceinfo -q com.apple.mobile.battery -k BatteryCurrentCapacity 2>/dev/null)
+    if idevicepair validate >/dev/null 2>&1; then pair=paired; else pair="not paired"; fi
+    if mounted; then m="mounted at $MNT"; else m="not mounted"; fi
+    say "${name:-iPhone} · iOS ${ios:-?} · battery ${batt:-?}% · $pair · $m"
+}
+
+case "$1" in
+    mount|m)    do_mount ;;
+    unmount|umount|u) do_unmount ;;
+    status|s|"") do_status ;;
+    open|o)     do_mount && { setsid alacritty --working-directory "$MNT/DCIM" >/dev/null 2>&1 & } ;;
+    photos|p)
+        # Copy the camera roll; safe to re-run, it carries on where it stopped.
+        do_mount || exit 1
+        mkdir -p "$PHOTOS"
+        rsync -av --progress "$MNT/DCIM/" "$PHOTOS/" && say "Photos copied to $PHOTOS" ;;
+    backup|b)
+        # A full iTunes-style backup of the whole phone.
+        connected; paired
+        mkdir -p "$BACKUP"
+        idevicebackup2 backup --full "$BACKUP" && say "Backup done in $BACKUP" ;;
+    send|l)     exec localsend ;;
+    *)
+        cat <<EOF
+usage: iphone [command]
+  status   (s)  name, iOS, battery, paired, mounted   [default]
+  mount    (m)  mount the phone at ~/iphone
+  unmount  (u)  unmount it, before unplugging
+  open     (o)  mount and open a terminal (alacritty) in DCIM
+  photos   (p)  copy the camera roll to $PHOTOS
+  backup   (b)  full device backup into $BACKUP
+  send     (l)  start LocalSend (wireless)
+EOF
+        exit 2 ;;
+esac

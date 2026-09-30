@@ -1,0 +1,3 @@
+#!/bin/sh
+# LocalSend isn't packaged for Void; run the official AppImage.
+exec "$HOME/.local/opt/localsend/LocalSend-1.18.2-linux-x86-64.AppImage" "$@"
