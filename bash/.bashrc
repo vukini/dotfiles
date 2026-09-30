@@ -281,3 +281,11 @@ echo "Successfully sourced .bashrc"
 [[ ":$PATH:" == *":$HOME/fpcupdeluxe/fpc/bin/x86_64-linux:"* ]] || PATH="$HOME/fpcupdeluxe/fpc/bin/x86_64-linux:$PATH"
 alias lazbuild='$HOME/fpcupdeluxe/lazarus/lazbuild --pcp=$HOME/fpcupdeluxe/config_lazarus'
 alias lazarus='$HOME/Lazarus_fpcupdeluxe.sh'
+
+# iPhone over the cable (~/.local/bin/iphone; Super+Shift+i is the menu).
+alias ips='iphone status'     # name, iOS, battery, paired, mounted
+alias ipm='iphone mount'      # mount at ~/iphone
+alias ipu='iphone unmount'    # unmount before unplugging
+alias ipo='iphone open'       # mount and open alacritty in DCIM
+alias ipp='iphone photos'     # copy camera roll to ~/Pictures/iphone
+alias ipb='iphone backup'     # full device backup to ~/backups/iphone
