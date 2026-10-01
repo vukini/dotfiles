@@ -178,6 +178,7 @@ alias gup='gpush && vikix update core'
 # (a lesson, a key) before pushing. gup pushes the same commits later.
 alias gtry='vikix update core --from ~/src/vikix'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
+alias gliv='gpush ~/src/living-series'   # the Living Series
 alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
