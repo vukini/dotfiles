@@ -169,7 +169,10 @@ gpush() {
 # (_gcatchup) instead of refusing. Replaces Vikix's `git pull --ff-only`.
 unalias gpl 2>/dev/null
 gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git log -1 --format='%h %s' | cut -c1-60)"; }
-alias gup='gpush && vikix update'   # push everything, then pull it into ~/vikix as a user would
+# gup: push, then only Vikix's part of an update (core: seconds). Void's
+# packages and your tools (cargo rebuilds from source: minutes) come with a
+# plain vikix update, run now and then.
+alias gup='gpush && vikix update core'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
 alias gall='gpush ~/General/Living-in-Life/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
