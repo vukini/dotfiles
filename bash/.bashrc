@@ -173,6 +173,10 @@ gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git lo
 # packages and your tools (cargo rebuilds from source: minutes) come with a
 # plain vikix update, run now and then.
 alias gup='gpush && vikix update core'
+# gtry: the desktop takes ~/src/vikix's main straight from there, without
+# GitHub or the key's passphrase: seconds, for trying a small change
+# (a lesson, a key) before pushing. gup pushes the same commits later.
+alias gtry='vikix update core --from ~/src/vikix'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
 alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
