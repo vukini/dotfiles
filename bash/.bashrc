@@ -337,3 +337,56 @@ alias ipu='iphone unmount'    # unmount before unplugging
 alias ipo='iphone open'       # mount and open alacritty in DCIM
 alias ipp='iphone photos'     # copy camera roll to ~/Pictures/iphone
 alias ipb='iphone backup'     # full device backup to ~/backups/iphone
+
+# --- Fuzzy finding (fzf, with fd, bat and rg) ---------------------------------
+# Type a few letters to narrow, Enter picks, Esc leaves. Hidden files are in,
+# .git isn't. Each takes an optional folder or starting query.
+#   ff  [dir]    find a file, preview it; prints the path (cp "$(ff)" ...)
+#   fo  [dir]    find a file and open it in its usual program (xdg-open)
+#   fe  [dir]    find a file and edit it in $EDITOR
+#   fcd [dir]    find a folder and cd into it
+#   fh           find a command in your history; Up then brings it back
+#   frg PATTERN  find text in files (ripgrep); edit at that line
+_fz_files() { fd --type f --hidden --exclude .git . "${1:-.}" 2>/dev/null; }
+_fz_preview='bat --style=numbers --color=always --line-range :300 {} 2>/dev/null || file {}'
+
+ff() {
+  _fz_files "$1" | fzf --height 80% --reverse --prompt 'file> ' --preview "$_fz_preview"
+}
+
+fo() {
+  local f; f=$(ff "$1") || return
+  setsid -f xdg-open "$f" >/dev/null 2>&1
+}
+
+fe() {
+  local f; f=$(ff "$1") || return
+  "${EDITOR:-nvim}" "$f"
+}
+
+fcd() {
+  local d
+  d=$(fd --type d --hidden --exclude .git . "${1:-.}" 2>/dev/null |
+      fzf --height 80% --reverse --prompt 'cd> ' --preview 'eza -1 --color=always --group-directories-first {}') || return
+  cd "$d" || return
+}
+
+fh() {
+  local c
+  c=$(HISTTIMEFORMAT='' history | sed 's/^ *[0-9]* *//' | tac | awk '!seen[$0]++' |
+      fzf --height 60% --reverse --prompt 'history> ' --no-sort) || return
+  # Not run: it goes into your history, so Up brings it to the prompt
+  # to check or change first.
+  history -s "$c"
+  printf '%s   (Up to use it)\n' "$c"
+}
+
+frg() {
+  [ -n "$1" ] || { echo "frg PATTERN [dir]"; return 1; }
+  local hit
+  hit=$(rg --line-number --no-heading --color=always --hidden --glob '!.git' "$1" "${2:-.}" |
+        fzf --ansi --height 80% --reverse --prompt 'text> ' --delimiter : \
+            --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \
+            --preview-window '+{2}-/2') || return
+  "${EDITOR:-nvim}" "+$(cut -d: -f2 <<<"$hit")" "$(cut -d: -f1 <<<"$hit")"
+}
