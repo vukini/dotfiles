@@ -146,7 +146,7 @@ _gcatchup() {
 # catches up first (_gcatchup) and pushes again.
 gpush() {
   local r ok=0 missing
-  [ $# -gt 0 ] || set -- ~/General/Living-in-Life/vikix ~/.emacs.d
+  [ $# -gt 0 ] || set -- ~/src/vikix ~/.emacs.d
   for r in "$@"; do
     echo "== ${r/#$HOME/\~}"
     git -C "$r" status --short | grep -v '^??' | sed 's/^/   not committed: /'
@@ -174,7 +174,7 @@ gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git lo
 # plain vikix update, run now and then.
 alias gup='gpush && vikix update core'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
-alias gall='gpush ~/General/Living-in-Life/vikix ~/.emacs.d ~/.dotfiles'   # all three
+alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
 alias pv='ping voidlinux.org'
