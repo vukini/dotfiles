@@ -150,6 +150,9 @@ gpush() {
   for r in "$@"; do
     echo "== ${r/#$HOME/\~}"
     git -C "$r" status --short | grep -v '^??' | sed 's/^/   not committed: /'
+    # A new repo's first push: give the branch its upstream.
+    git -C "$r" rev-parse -q --verify '@{u}' >/dev/null 2>&1 ||
+      git -C "$r" push -q -u origin HEAD || { ok=1; continue; }
     git -C "$r" push --follow-tags -q 2>/dev/null ||
       { _gcatchup "$r" && git -C "$r" push --follow-tags -q; } || { ok=1; continue; }
     missing=$(comm -23 <(git -C "$r" tag | sort) \
