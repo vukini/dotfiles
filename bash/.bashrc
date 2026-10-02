@@ -179,6 +179,7 @@ alias gup='gpush && vikix update core'
 alias gtry='vikix update core --from ~/src/vikix'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
 alias gliv='gpush ~/src/living-series'   # the Living Series
+alias gesp='gpush ~/src/esploro'         # Esploro
 alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles'   # all three
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
