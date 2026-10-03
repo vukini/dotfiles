@@ -61,7 +61,7 @@ add_path "$HOME/.npm-global/bin"   # npm global prefix; provides `claude`
 add_path "$HOME/.cargo/bin"                      after   # append: /usr/bin/exa is eza 0.23, the cargo one is dead exa 0.10
 export PATH
 
-export TERMINAL='kitty'
+export TERMINAL='alacritty'
 
 # -------------------------------------------------------------------- prompt
 # Sets PROMPT_COMMAND=command_prompt, which rebuilds PS1 each prompt, and
@@ -183,7 +183,7 @@ alias gtry='vikix update core --from ~/src/vikix'
 alias gdots='gpush ~/.dotfiles'     # these dotfiles
 alias gliv='gpush ~/src/living-series'   # the Living Series
 alias gesp='gpush ~/src/esploro'         # Esploro
-alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles ~/src/living-series ~/src/project-logs'   # everything
+alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles ~/src/living-series ~/src/project-logs ~/src/esploro'   # everything
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
 alias pv='ping voidlinux.org'
