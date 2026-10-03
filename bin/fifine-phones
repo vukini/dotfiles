@@ -1,0 +1,30 @@
+#!/bin/sh
+# Turn the headphone jack on the Fifine USB mic on or off.
+# Off (the default at plug-in, see ~/.config/wireplumber/wireplumber.conf.d/
+# 51-fifine-mic-input-only.conf) keeps sound on the laptop speakers.
+#   fifine-phones [on|off|toggle|status]    (no argument = toggle)
+CARD=alsa_card.usb-MV-SILICON_fifine_Microphone_20190808-00
+PHONES=alsa_output.usb-MV-SILICON_fifine_Microphone_20190808-00.analog-stereo
+SPEAKERS=alsa_output.pci-0000_00_1f.3.analog-stereo
+
+pactl list short cards | grep -q "$CARD" || { echo "Fifine mic not plugged in" >&2; exit 1; }
+
+state() { pactl list short sinks | grep -q "$PHONES" && echo on || echo off; }
+
+case "${1:-toggle}" in
+    on)     want=on ;;
+    off)    want=off ;;
+    toggle) [ "$(state)" = on ] && want=off || want=on ;;
+    status) echo "headphones: $(state)"; exit 0 ;;
+    *)      echo "usage: fifine-phones [on|off|toggle|status]" >&2; exit 2 ;;
+esac
+
+if [ "$want" = on ]; then
+    pactl set-card-profile "$CARD" output:analog-stereo+input:mono-fallback
+    i=0; until pactl list short sinks | grep -q "$PHONES" || [ $i -ge 25 ]; do sleep 0.2; i=$((i+1)); done
+    pactl set-default-sink "$PHONES"
+else
+    pactl set-card-profile "$CARD" input:mono-fallback
+    pactl set-default-sink "$SPEAKERS"
+fi
+echo "headphones: $(state)"
