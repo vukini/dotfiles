@@ -325,12 +325,7 @@ if _is_rich_term; then
     # searches; the Up arrow stays plain history.
     [ -r "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
     command -v atuin >/dev/null 2>&1 && eval "$(atuin init bash --disable-up-arrow)"
-
-    # Must be last: ble.sh takes over the line editor.
-    [[ ${BLE_VERSION-} ]] && ble-attach
 fi
-
-echo "Successfully sourced .bashrc"
 
 . "$HOME/.local/bin/env"
 
@@ -401,3 +396,14 @@ frg() {
             --preview-window '+{2}-/2') || return
   "${EDITOR:-nvim}" "+$(cut -d: -f2 <<<"$hit")" "$(cut -d: -f1 <<<"$hit")"
 }
+
+# ------------------------------------------------------------------- the end
+# Said on a reload (alias `r`) only, not in every new terminal.
+[[ ${_bashrc_loaded-} ]] && echo "Successfully sourced .bashrc"
+_bashrc_loaded=1
+
+# Must be the very last line: ble.sh takes over the line editor and draws the
+# prompt right here. Anything printed after it lands on that prompt line and
+# leaves the cursor on a bare line, which looks like the shell is waiting for
+# another Enter.
+if _is_rich_term && [[ ${BLE_VERSION-} ]]; then ble-attach; fi
