@@ -172,18 +172,25 @@ gpush() {
 # (_gcatchup) instead of refusing. Replaces Vikix's `git pull --ff-only`.
 unalias gpl 2>/dev/null
 gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git log -1 --format='%h %s' | cut -c1-60)"; }
-# gup: push, then only Vikix's part of an update (core: seconds). Void's
-# packages and your tools (cargo rebuilds from source: minutes) come with a
-# plain vikix update, run now and then.
-alias gup='gpush && vikix update core'
+# The repos plugin (vikix plugin add repos) does these for every project at
+# once: repos push | pull | ship | update, pinned projects (Esploro, the
+# plugins) pushed before Vikix. Without it, the gpush above.
+_repos() { command -v repos >/dev/null 2>&1; }
+# gup: push everything that needs it, then only Vikix's part of an update
+# (core: seconds). Void's packages and your tools (cargo rebuilds from
+# source: minutes) come with gsys, run now and then.
+unalias gup gall gdots gliv gesp 2>/dev/null
+gup() { if _repos; then repos ship; else gpush && vikix update core; fi; }
+gpullall() { repos pull "$@"; }   # every project: GitHub's new commits, yours on top
+alias gsys='vikix update'          # the whole system: Void, Vikix, your tools
 # gtry: the desktop takes ~/src/vikix's main straight from there, without
 # GitHub or the key's passphrase: seconds, for trying a small change
 # (a lesson, a key) before pushing. gup pushes the same commits later.
 alias gtry='vikix update core --from ~/src/vikix'
-alias gdots='gpush ~/.dotfiles'     # these dotfiles
-alias gliv='gpush ~/src/living-series'   # the Living Series
-alias gesp='gpush ~/src/esploro'         # Esploro
-alias gall='gpush ~/src/vikix ~/.emacs.d ~/.dotfiles ~/src/living-series ~/src/project-logs ~/src/esploro'   # everything
+gdots() { if _repos; then repos push .dotfiles; else gpush ~/.dotfiles; fi; }              # these dotfiles
+gliv()  { if _repos; then repos push living-series; else gpush ~/src/living-series; fi; }  # the Living Series
+gesp()  { if _repos; then repos push esploro; else gpush ~/src/esploro; fi; }              # Esploro
+gall()  { if _repos; then repos push; else gpush ~/src/vikix ~/.emacs.d ~/.dotfiles ~/src/living-series ~/src/project-logs ~/src/esploro; fi; }   # everything
 alias gcredential='git config credential.helper store'   # WARNING: plaintext ~/.git-credentials
 
 alias pv='ping voidlinux.org'
