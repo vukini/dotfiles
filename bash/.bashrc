@@ -178,9 +178,16 @@ gpl() { echo "== ${PWD/#$HOME/\~}"; _gcatchup . && echo "   up to date: $(git lo
 _repos() { command -v repos >/dev/null 2>&1; }
 # gup: push everything that needs it, then only Vikix's part of an update
 # (core: seconds). Void's packages and your tools (cargo rebuilds from
-# source: minutes) come with gsys, run now and then.
+# source: minutes) come with gsys, run now and then. Its last line says
+# when it ran, whatever the outcome.
 unalias gup gall gdots gliv gesp 2>/dev/null
-gup() { if _repos; then repos ship; else gpush && vikix update core; fi; }
+gup() {
+  local rc
+  if _repos; then repos ship; else gpush && vikix update core; fi
+  rc=$?
+  echo "gup ran $(date '+%a %-d %b %Y, %H:%M:%S')"
+  return "$rc"
+}
 gpullall() { repos pull "$@"; }   # every project: GitHub's new commits, yours on top
 alias gsys='vikix update'          # the whole system: Void, Vikix, your tools
 # gtry: the desktop takes ~/src/vikix's main straight from there, without
