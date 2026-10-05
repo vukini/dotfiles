@@ -404,6 +404,9 @@ frg() {
   "${EDITOR:-nvim}" "+$(cut -d: -f2 <<<"$hit")" "$(cut -d: -f1 <<<"$hit")"
 }
 
+# Private aliases and functions (servers, hosts) live outside the repo.
+[[ -r "$HOME/.bashrc.local" ]] && . "$HOME/.bashrc.local"
+
 # ------------------------------------------------------------------- the end
 # Said on a reload (alias `r`) only, not in every new terminal.
 [[ ${_bashrc_loaded-} ]] && echo "Successfully sourced .bashrc"
