@@ -194,6 +194,9 @@ alias gsys='vikix update'          # the whole system: Void, Vikix, your tools
 # GitHub or the key's passphrase: seconds, for trying a small change
 # (a lesson, a key) before pushing. gup pushes the same commits later.
 alias gtry='vikix update core --from ~/src/vikix'
+# gq: the Vikix releases under way: which one is testing, which wait their
+# turn, each since when and what it brings. Nothing is changed.
+alias gq='~/src/vikix/.claude/release --queue'
 gdots() { if _repos; then repos push .dotfiles; else gpush ~/.dotfiles; fi; }              # these dotfiles
 gliv()  { if _repos; then repos push living-series; else gpush ~/src/living-series; fi; }  # the Living Series
 gesp()  { if _repos; then repos push esploro; else gpush ~/src/esploro; fi; }              # Esploro
