@@ -183,6 +183,13 @@ _repos() { command -v repos >/dev/null 2>&1; }
 unalias gup gall gdots gliv gesp 2>/dev/null
 gup() {
   local rc
+  # From a folder that is gone (a desk its release removed, with this shell
+  # still in it): go home first, and say so. Every program started here
+  # would begin with "shell-init: getcwd" noise, and there is no back to go.
+  if ! pwd -P >/dev/null 2>&1; then
+    echo "${PWD/#$HOME/\~} is gone: now in ~"
+    cd ~ || return
+  fi
   if _repos; then repos ship; else gpush && vikix update core; fi
   rc=$?
   echo "gup ran $(date '+%a %-d %b %Y, %H:%M:%S')"
