@@ -344,8 +344,6 @@ if _is_rich_term; then
     command -v atuin >/dev/null 2>&1 && eval "$(atuin init bash --disable-up-arrow)"
 fi
 
-. "$HOME/.local/bin/env"
-
 # Free Pascal 3.2.2 + Lazarus 4.8, built by fpcupdeluxe in ~/fpcupdeluxe.
 # fpc finds its config through ~/fpcupdeluxe/fpc/bin/etc/fpc.cfg (a link).
 # Lazarus keeps its settings in config_lazarus, so lazbuild needs --pcp.
@@ -427,3 +425,8 @@ _bashrc_loaded=1
 # leaves the cursor on a bare line, which looks like the shell is waiting for
 # another Enter.
 if _is_rich_term && [[ ${BLE_VERSION-} ]]; then ble-attach; fi
+export OPENSSL_CONF=$HOME/.tls-classic.cnf
+export NODE_OPTIONS="--openssl-config=$HOME/.tls-classic.cnf"
+
+# opencode
+export PATH=/home/vukini/.opencode/bin:$PATH
