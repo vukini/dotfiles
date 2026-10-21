@@ -380,6 +380,13 @@ fo() {
   setsid -f xdg-open "$f" >/dev/null 2>&1
 }
 
+# xo FILE...  open with the usual program, detached from this terminal.
+# Vikix sets xo as a plain alias; an alias beats a function of the same
+# name, so drop it first. setsid -f gives the program its own session and
+# the prompt comes straight back; closing the terminal no longer kills it.
+unalias xo 2>/dev/null
+xo() { setsid -f xdg-open "$@" >/dev/null 2>&1; }
+
 fe() {
   local f; f=$(ff "$1") || return
   "${EDITOR:-nvim}" "$f"
